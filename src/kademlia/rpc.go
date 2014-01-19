@@ -85,6 +85,22 @@ type FindNodeResult struct {
 
 func (k *Kademlia) FindNode(req FindNodeRequest, res *FindNodeResult) error {
     // TODO: Implement.
+    go Update(k, req.Sender)
+
+    bitindex := k.NodeID.Xor(req.NodeID).PrefixLen()
+    tempFoundNode:=new(FoundNode)
+    FoundNodelst := make([]FoundNode, K)
+    for i:=0;i<len(k.AddrTab[bitindex].ContactLst);i++{
+        tempFoundNode.NodeID=k.AddrTab[bitindex].ContactLst[i].NodeID
+        tempFoundNode.Port=k.AddrTab[bitindex].ContactLst[i].Port
+        tempFoundNode.IPAddr=k.AddrTab[bitindex].ContactLst[i].Host.String()
+        FoundNodelst[i]=*tempFoundNode
+    }
+    res.Nodes=FoundNodelst
+
+
+    res.MsgID=req.MsgID
+    res.Err=nil
     return nil
 }
 
@@ -107,6 +123,24 @@ type FindValueResult struct {
 
 func (k *Kademlia) FindValue(req FindValueRequest, res *FindValueResult) error {
     // TODO: Implement.
+    go Update(k, req.Sender)
+    found, val:=Local_Find_Value(k,req.Key)
+    res.Value=val
+    if found == false{
+        bitindex := k.NodeID.Xor(req.Key).PrefixLen()
+        tempFoundNode:=new(FoundNode)
+        FoundNodelst := make([]FoundNode, K)
+        for i:=0;i<len(k.AddrTab[bitindex].ContactLst);i++{
+            tempFoundNode.NodeID=k.AddrTab[bitindex].ContactLst[i].NodeID
+            tempFoundNode.Port=k.AddrTab[bitindex].ContactLst[i].Port
+            tempFoundNode.IPAddr=k.AddrTab[bitindex].ContactLst[i].Host.String()
+            FoundNodelst[i]=*tempFoundNode
+        }
+        res.Nodes=FoundNodelst
+    }
+
+    res.MsgID=req.MsgID
+    res.Err=nil
     return nil
 }
 

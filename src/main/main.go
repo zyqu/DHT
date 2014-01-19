@@ -55,6 +55,7 @@ func main() {
     }
     ping := new(kademlia.Ping)
     //fmt.Println(ping)
+    ping.Sender.Host=net.IPv4(224, 0, 0, 1) 
     ping.MsgID = kademlia.NewRandomID()
     var pong kademlia.Pong
     err = client.Call("Kademlia.Ping", ping, &pong)

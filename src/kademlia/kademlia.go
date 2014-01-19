@@ -86,12 +86,10 @@ func Get_Contact2(kadem *Kademlia, id ID) (bool, int){
 
   for i:=0; i<K; i++ {
       if contactlst[i].NodeID.Equals(id)==true && contactlst[i].Host != nil{
-        //fmt.Println("%v %v\n", contactlst[i].Host, contactlst[i].Port)
         return true, i
       }
   }
 
-  //fmt.Println("ERR")
   return false, -1
 }
 
@@ -113,16 +111,14 @@ func Get_Contact(kadem *Kademlia, id ID) (bool, int){
   return false, -1
 }
 
-func Local_Find_Value(kadem *Kademlia, key ID) int{
+func Local_Find_Value(kadem *Kademlia, key ID) (bool, []byte){
   val, ok := kadem.Localmap[key]
   if ok ==false{
    	fmt.Println("ERR")
-   	return -1
-   }
-	if ok == true{
+   } else {
 		fmt.Println(val)
 	}
-	return 0
+  return ok, val
 }
 
 
