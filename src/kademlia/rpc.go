@@ -58,7 +58,7 @@ func (k *Kademlia) Store(req StoreRequest, res *StoreResult) error {
     go Update(k, req.Sender)
     k.Localmap[req.Key]=req.Value
     fmt.Println("\n")
-    res.MsgID=req.MsgID
+    res.MsgID=CopyID(req.MsgID)
     res.Err=nil
     return nil
 }
@@ -99,7 +99,7 @@ func (k *Kademlia) FindNode(req FindNodeRequest, res *FindNodeResult) error {
     res.Nodes=FoundNodelst
 
 
-    res.MsgID=req.MsgID
+    res.MsgID=CopyID(req.MsgID)
     res.Err=nil
     return nil
 }
@@ -139,7 +139,7 @@ func (k *Kademlia) FindValue(req FindValueRequest, res *FindValueResult) error {
         res.Nodes=FoundNodelst
     }
 
-    res.MsgID=req.MsgID
+    res.MsgID=CopyID(req.MsgID)
     res.Err=nil
     return nil
 }

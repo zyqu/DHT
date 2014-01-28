@@ -121,6 +121,21 @@ func Local_Find_Value(kadem *Kademlia, key ID) (bool, []byte){
   return ok, val
 }
 
+func DoPing(remoteHost net.IP, port uint16){
+
+}
+
+func DoStore(remoteContact *Contact, Key ID, Value []byte){
+
+}
+
+func DoFindValue(remoteContact *Contact, Key ID){
+
+}
+
+func DoFindNode(remoteContact *Contact, searchKey ID){
+  
+}
 
 
 func NewKademlia() *Kademlia {
@@ -129,6 +144,8 @@ func NewKademlia() *Kademlia {
     retNode.NodeID=NewRandomID()
     //retNode.NodeID,_ = FromString("c3744506eaee5ffe77b580a5676c59d5776587ca")
     retNode.Localmap = make(map[ID][]byte)
+    //retNode.Host=
+    //retNode.Port=
     //retNode.Localmap["Zhengyang"]=1
     //retNode.AddrTab[152].ContactLst[0].NodeID, _=FromString("c3744506eaee5ffe77b580a5676c59d5776587cb")
     //fmt.Println(retNode.AddrTab[152].ContactLst[0].Host==nil)

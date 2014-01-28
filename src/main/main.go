@@ -63,6 +63,8 @@ func main() {
         log.Fatal("Call: ", err)
     }
 
+    
+
     log.Printf("ping msgID: %s\n", ping.MsgID.AsString())
     log.Printf("pong msgID: %s\n", pong.MsgID.AsString())
 
