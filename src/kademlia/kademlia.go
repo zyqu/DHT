@@ -47,7 +47,11 @@ func GetIndexLst(lst [K]Contact) int{
 func  Update(k *Kademlia, contact Contact) error{
     selfid:=k.NodeID
     requestid:=contact.NodeID
+
     bitindex := selfid.Xor(requestid).PrefixLen()-1
+    if bitindex < 0{
+      bitindex=0
+    }
 
     full := (K==GetIndexLst(k.AddrTab[bitindex].ContactLst))
     hasContact, currentindex := Get_Contact2(k, requestid)
@@ -99,6 +103,10 @@ func  Update(k *Kademlia, contact Contact) error{
 func Get_Contact2(kadem *Kademlia, id ID) (bool, int){
 
   bitindex :=  kadem.NodeID.Xor(id).PrefixLen()-1
+  if bitindex < 0{
+      bitindex=0
+  }
+  
   contactlst:=kadem.AddrTab[bitindex].ContactLst
 
   for i:=0; i<K; i++ {
@@ -115,6 +123,10 @@ func Get_Contact2(kadem *Kademlia, id ID) (bool, int){
 func Get_Contact(kadem *Kademlia, id ID) (bool, int){
 
   bitindex :=  kadem.NodeID.Xor(id).PrefixLen()-1
+  if bitindex < 0{
+      bitindex=0
+  }
+
   contactlst:=kadem.AddrTab[bitindex].ContactLst
 
   for i:=0; i<K; i++ {
