@@ -8,8 +8,8 @@ import (
     "log"
     "math/rand"
     "net"
-    "net/http"
-    "net/rpc"
+    //"net/http"
+    //"net/rpc"
     "time"
     "strings"
 )
@@ -31,11 +31,14 @@ func main() {
         log.Fatal("Must be invoked with exactly two arguments!\n")
     }
     listenStr := args[0]
-    firstPeerStr := args[1]
+    //firstPeerStr := args[1]
 
     fmt.Printf("kademlia starting up!\n")
-    kadem := kademlia.NewKademlia()
-
+    //kademClient := kademlia.NewKademlia()
+    kademServer := kademlia.NewKademlia()
+    kademlia.StartServ(kademServer,listenStr)
+    //kademlia.StartServ(kademClient,firstPeerStr)
+/*
     rpc.Register(kadem)
     rpc.HandleHTTP()
     l, err := net.Listen("tcp", listenStr)
@@ -45,10 +48,11 @@ func main() {
 
     // Serve forever.
     go http.Serve(l, nil)
-
+*/
     // Confirm our server is up with a PING request and then exit.
     // Your code should loop forever, reading instructions from stdin and
     // printing their results to stdout. See README.txt for more details.
+    /*
     client, err := rpc.DialHTTP("tcp", firstPeerStr)
     if err != nil {
         log.Fatal("DialHTTP: ", err)
@@ -66,7 +70,7 @@ func main() {
     
 
     log.Printf("ping msgID: %s\n", ping.MsgID.AsString())
-    log.Printf("pong msgID: %s\n", pong.MsgID.AsString())
+    log.Printf("pong msgID: %s\n", pong.MsgID.AsString())*/
 
     reader := bufio.NewReader(os.Stdin)
     //loop
@@ -80,12 +84,23 @@ func main() {
 
 
         switch tokens[0] {
+
+        case "ping":
+            if len(tokens) != 2{
+                fmt.Println("ping takes 1 argument, IP:port or NodeID")
+                break
+            }
+            if strings.Contains(tokens[1],":"){
+                iptokens:=strings.Split(tokens[1], ":")
+                kademlia.DoPing(kademServer, net.ParseIP(iptokens[0]), kademlia.Str2Port(iptokens[1]))
+            }
+
         case "whoami":
             if len(tokens) != 1{
                 fmt.Println("Whoami takes no argument")
                 break
             }
-            fmt.Println(kadem.NodeID.AsString())
+            fmt.Println(kademServer.NodeID.AsString())
 
         case "local_find_value":
             if len(tokens) != 2{
@@ -93,7 +108,7 @@ func main() {
                 break
             }
             keyID, _ := kademlia.FromString(tokens[1])
-            kademlia.Local_Find_Value(kadem, keyID)
+            kademlia.Local_Find_Value(kademServer, keyID)
 
         case "get_contact":
             if len(tokens) != 2{
@@ -101,7 +116,7 @@ func main() {
                 break
             }
             targetID, _ := kademlia.FromString(tokens[1])
-            kademlia.Get_Contact(kadem, targetID)
+            kademlia.Get_Contact(kademServer, targetID)
 
         case "iterativeStore":
             if len(tokens) != 3{

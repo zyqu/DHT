@@ -8,6 +8,7 @@ import (
     "fmt"
     )
 
+
 // Host identification.
 type Contact struct {
     NodeID ID
@@ -85,7 +86,7 @@ type FindNodeResult struct {
 
 func (k *Kademlia) FindNode(req FindNodeRequest, res *FindNodeResult) error {
     // TODO: Implement.
-    go Update(k, req.Sender)
+    Update(k, req.Sender)
 
     bitindex := k.NodeID.Xor(req.NodeID).PrefixLen()
     tempFoundNode:=new(FoundNode)
@@ -123,7 +124,7 @@ type FindValueResult struct {
 
 func (k *Kademlia) FindValue(req FindValueRequest, res *FindValueResult) error {
     // TODO: Implement.
-    go Update(k, req.Sender)
+    Update(k, req.Sender)
     found, val:=Local_Find_Value(k,req.Key)
     res.Value=val
     if found == false{
