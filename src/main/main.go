@@ -85,6 +85,11 @@ func main() {
 
         switch tokens[0] {
 
+        case "store":
+            if len(tokens) != 4{
+                fmt.Println("store takes 3 arguments, nodeID key value")
+            }
+
         case "ping":
             if len(tokens) != 2{
                 fmt.Println("ping takes 1 argument, IP:port or NodeID")

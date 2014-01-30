@@ -80,7 +80,7 @@ func  Update(k *Kademlia, contact Contact) error{
         return nil
       } else{
         topContact:=k.AddrTab[bitindex].ContactLst[0]
-        pingSucc := DoPing(k, remoteHost topContact.Host, topContact.Port)
+        pingSucc := DoPing(k, topContact.Host, topContact.Port)
         if pingSucc==true{
           return nil
         } else{
@@ -106,7 +106,7 @@ func Get_Contact2(kadem *Kademlia, id ID) (bool, int){
   if bitindex < 0{
       bitindex=0
   }
-  
+
   contactlst:=kadem.AddrTab[bitindex].ContactLst
 
   for i:=0; i<K; i++ {
@@ -212,19 +212,135 @@ func DoPing(kadem *Kademlia, remoteHost net.IP, port uint16) bool{
     fmt.Println("Ping Failure!")
     return false;
 }
-/*
-func DoStore(remoteContact *Contact, Key ID, Value []byte){
+
+func DoStore(kadem *Kademlia, remoteContact *Contact, storeKey ID, storeValue []byte) bool{
+    remoteHost:=remoteContact.Host
+    remotePortstr:=Port2Str(remoteContact.Port)
+    fmt.Println("Start Store:")
+    client, err := rpc.DialHTTP("tcp", remoteHost.String()+":"+remotePortstr)
+    if err != nil {
+        //log.Fatal("DialHTTP: ", err)
+        return false
+    }
+
+    storeReq := new(StoreRequest)
+    storeReq.Sender.NodeID=kadem.NodeID
+    storeReq.Sender.Host=kadem.Host
+    storeReq.Sender.Port=kadem.Port
+
+    storeReq.MsgID=NewRandomID()
+
+    storeReq.Key=storeKey
+    storeReq.Value=storeValue
+
+    var storeRes StoreResult
+
+    err = client.Call("Kademlia.Store", storeReq, &storeRes)
+    if err != nil {
+        //log.Fatal("Call: ", err)
+        return false
+    }
+    if storeReq.MsgID.Equals(storeRes.MsgID){
+        go Update(kadem, *remoteContact)
+        fmt.Println("Store Success!")
+        return true;
+    }
+    fmt.Println("Store Failure!")
+    return false;
 
 }
 
-func DoFindValue(remoteContact *Contact, Key ID){
+func DoFindNode(kadem *Kademlia, remoteContact *Contact, searchKey ID) bool{
+
+    remoteHost:=remoteContact.Host
+    remotePortstr:=Port2Str(remoteContact.Port)
+    fmt.Println("Start FoundNode:")
+    client, err := rpc.DialHTTP("tcp", remoteHost.String()+":"+remotePortstr)
+    if err != nil {
+        //log.Fatal("DialHTTP: ", err)
+        return false
+    }
+
+    findNodeReq := new(FindNodeRequest)
+    findNodeReq.Sender.NodeID=kadem.NodeID
+    findNodeReq.Sender.Host=kadem.Host
+    findNodeReq.Sender.Port=kadem.Port
+
+    findNodeReq.MsgID=NewRandomID()
+
+    findNodeReq.NodeID=searchKey
+
+    var findNodeRes FindNodeResult
+    err = client.Call("Kademlia.FindNode", findNodeReq, &findNodeRes)
+
+    if err != nil {
+        //log.Fatal("Call: ", err)
+        return false
+    }
+
+    if findNodeReq.MsgID.Equals(findNodeRes.MsgID){
+        go Update(kadem, *remoteContact)
+        fmt.Println("Found Node Success!")
+        fmt.Println(findNodeRes.Nodes)
+        return true;
+    }
+    fmt.Println("FondNode Failure!")
+    return false;
 
 }
 
-func DoFindNode(remoteContact *Contact, searchKey ID){
+
+func DoFindValue(kadem *Kademlia, remoteContact *Contact, searchKey ID) bool{
+    remoteHost:=remoteContact.Host
+    remotePortstr:=Port2Str(remoteContact.Port)
+    fmt.Println("Start FoundValue:")
+    client, err := rpc.DialHTTP("tcp", remoteHost.String()+":"+remotePortstr)
+    if err != nil {
+        //log.Fatal("DialHTTP: ", err)
+        return false
+    }
+
+    findValueReq := new(FindValueRequest)
+
+    findValueReq.Sender.Host=kadem.Host
+    findValueReq.Sender.Port=kadem.Port
+    findValueReq.Sender.NodeID=kadem.NodeID
+
+    findValueReq.MsgID=NewRandomID()
+
+    findValueReq.Key=searchKey
+
+    var findValueRes FindValueResult
+
+    err = client.Call("Kademlia.FindValue", findValueReq, &findValueRes)
+
+    if err != nil {
+        //log.Fatal("Call: ", err)
+        return false
+    }
+
+    if findValueReq.MsgID.Equals(findValueRes.MsgID){
+        go Update(kadem, *remoteContact)
+        fmt.Println("Found Value Success!")
+        if findValueRes.Value != nil{
+          fmt.Println("Value Found:")
+          fmt.Println(findValueRes.Value)
+        }else{
+          fmt.Println("Node Found:")
+          fmt.Println(findValueRes.Nodes)
+        }
+        return true;
+    }
+    fmt.Println("FondValue Failure!")
+    return false;
+
+
+
 
 }
-*/
+
+
+
 
 
 func NewKademlia() *Kademlia {
