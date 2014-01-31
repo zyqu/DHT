@@ -32,6 +32,7 @@ type Pong struct {
 func (k *Kademlia) Ping(ping Ping, pong *Pong) error {
     // This one's a freebie.
     go Update(k, ping.Sender)
+    fmt.Println("Sever NodeID: ", k.NodeID.AsString())
     pong.MsgID = CopyID(ping.MsgID)
     pong.Sender.NodeID=k.NodeID
     pong.Sender.Host=k.Host

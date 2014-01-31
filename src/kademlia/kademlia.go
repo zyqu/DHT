@@ -100,6 +100,25 @@ func  Update(k *Kademlia, contact Contact) error{
     return nil
 }
 
+func Search_Contact(kadem *Kademlia, id ID) (bool, Contact){
+
+  bitindex :=  kadem.NodeID.Xor(id).PrefixLen()-1
+  if bitindex < 0{
+      bitindex=0
+  }
+
+  contactlst:=kadem.AddrTab[bitindex].ContactLst
+
+  for i:=0; i<K; i++ {
+      if contactlst[i].NodeID.Equals(id)==true && contactlst[i].Host != nil{
+        return true, contactlst[i]
+      }
+  }
+
+  return false, *new(Contact)
+}
+
+
 func Get_Contact2(kadem *Kademlia, id ID) (bool, int){
 
   bitindex :=  kadem.NodeID.Xor(id).PrefixLen()-1
@@ -181,6 +200,7 @@ func StartServ(kadem *Kademlia, ipport string) bool{
 }
 
 func DoPing(kadem *Kademlia, remoteHost net.IP, port uint16) bool{
+    fmt.Println("CLient NodeID: ",kadem.NodeID.AsString())
     portstr:=Port2Str(port)
     fmt.Println("Start Ping:")
     fmt.Println(remoteHost.String()+":"+portstr)
@@ -321,7 +341,7 @@ func DoFindValue(kadem *Kademlia, remoteContact *Contact, searchKey ID) bool{
 
     if findValueReq.MsgID.Equals(findValueRes.MsgID){
         go Update(kadem, *remoteContact)
-        fmt.Println("Found Value Success!")
+        fmt.Println("Find Value Success!")
         if findValueRes.Value != nil{
           fmt.Println("Value Found:")
           fmt.Println(findValueRes.Value)
@@ -331,7 +351,7 @@ func DoFindValue(kadem *Kademlia, remoteContact *Contact, searchKey ID) bool{
         }
         return true;
     }
-    fmt.Println("FondValue Failure!")
+    fmt.Println("FindValue Failure!")
     return false;
 
 

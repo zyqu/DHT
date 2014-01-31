@@ -31,10 +31,15 @@ func main() {
         log.Fatal("Must be invoked with exactly two arguments!\n")
     }
     listenStr := args[0]
-    //firstPeerStr := args[1]
+    firstPeerStr := args[1]
 
     fmt.Printf("kademlia starting up!\n")
-    //kademClient := kademlia.NewKademlia()
+    kademClient := kademlia.NewKademlia()
+
+    iptokens:=strings.Split(firstPeerStr, ":")
+    kademClient.Host=net.ParseIP(iptokens[0])
+    kademClient.Port=kademlia.Str2Port(iptokens[1])
+
     kademServer := kademlia.NewKademlia()
     kademlia.StartServ(kademServer,listenStr)
     //kademlia.StartServ(kademClient,firstPeerStr)
@@ -85,10 +90,53 @@ func main() {
 
         switch tokens[0] {
 
+
+        case "find_value":
+            if len(tokens) != 3{
+                fmt.Println("find_node takes 2 arguments, nodeID key")
+                break
+            }
+            nodeid, _ := kademlia.FromString(tokens[1])
+            keyid, _ :=kademlia.FromString(tokens[2])
+            found, targetCont := kademlia.Search_Contact(kademClient,nodeid)
+            if found==true{
+                kademlia.DoFindValue(kademClient, &targetCont, keyid)
+            } else{
+                fmt.Println("Contact not in bucket!")
+            }
+            
+
+        case "find_node":
+            if len(tokens) != 3{
+                fmt.Println("find_node takes 2 arguments, nodeID key")
+                break
+            }
+            nodeid, _ := kademlia.FromString(tokens[1])
+            keyid, _ :=kademlia.FromString(tokens[2])
+            found, targetCont := kademlia.Search_Contact(kademClient,nodeid)
+            if found==true{
+                kademlia.DoFindNode(kademClient, &targetCont, keyid)
+            }else{
+                fmt.Println("Contact not in bucket!")
+            }
+
+
+
         case "store":
             if len(tokens) != 4{
                 fmt.Println("store takes 3 arguments, nodeID key value")
+                break
             }
+            nodeid, _ := kademlia.FromString(tokens[1])
+            keyid, _ :=kademlia.FromString(tokens[2])
+            found, targetCont := kademlia.Search_Contact(kademClient,nodeid)
+            if found==true{
+                kademlia.DoStore(kademClient, &targetCont, keyid, []byte(tokens[3]))
+                fmt.Println("")
+            }else{
+                fmt.Println("Contact not in bucket!")
+            }
+
 
         case "ping":
             if len(tokens) != 2{
@@ -97,7 +145,7 @@ func main() {
             }
             if strings.Contains(tokens[1],":"){
                 iptokens:=strings.Split(tokens[1], ":")
-                kademlia.DoPing(kademServer, net.ParseIP(iptokens[0]), kademlia.Str2Port(iptokens[1]))
+                kademlia.DoPing(kademClient, net.ParseIP(iptokens[0]), kademlia.Str2Port(iptokens[1]))
             }
 
         case "whoami":
@@ -105,7 +153,7 @@ func main() {
                 fmt.Println("Whoami takes no argument")
                 break
             }
-            fmt.Println(kademServer.NodeID.AsString())
+            fmt.Println(kademClient.NodeID.AsString())
 
         case "local_find_value":
             if len(tokens) != 2{
@@ -121,7 +169,7 @@ func main() {
                 break
             }
             targetID, _ := kademlia.FromString(tokens[1])
-            kademlia.Get_Contact(kademServer, targetID)
+            kademlia.Get_Contact(kademClient, targetID)
 
         case "iterativeStore":
             if len(tokens) != 3{
