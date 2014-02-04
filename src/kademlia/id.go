@@ -12,7 +12,7 @@ import (
 const IDBytes = 20
 type ID [IDBytes]byte
 
-func (id ID) AsString() string {
+func (id ID) AsString() string  {
     return hex.EncodeToString(id[0:IDBytes])
 }
 
