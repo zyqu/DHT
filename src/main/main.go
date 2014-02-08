@@ -89,7 +89,13 @@ func main() {
 
 
         switch tokens[0] {
-
+			///////for test
+		case "show":
+			kademlia.ShowC(kademClient)
+		case "dis":
+			id1, _:=kademlia.FromString(tokens[1])
+			id2, _:=kademlia.FromString(tokens[2])
+			fmt.Println(id1.Xor(id2).PrefixLen())
 
         case "find_value":
             if len(tokens) != 3{
@@ -176,14 +182,15 @@ func main() {
                 fmt.Println("iterativeStore takes 2 arguments, the key and value you put in DHT")
                 break
             }
-            fmt.Println("iterativeStore")
+			
 
         case "iterativeFindNode":
             if len(tokens) != 2{
                 fmt.Println("iterativeFindNode takes 1 argument, the node ID")
                 break
             }
-            fmt.Println("iterativeFindNode")
+            nodeid, _ := kademlia.FromString(tokens[1])
+            kademlia.IterativeFindNode(kademClient, nodeid)
 
         case "iterativeFindValue":
             if len(tokens) != 2{
