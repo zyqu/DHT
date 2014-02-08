@@ -139,7 +139,7 @@ func (k *Kademlia) FindValue(req FindValueRequest, res *FindValueResult) error {
     res.Value=val
     if found == false{
         bitindex := k.NodeID.Xor(req.Key).PrefixLen()
-        tempFoundNode:=new(FoundNode)
+		tempFoundNode:=new(FoundNode)
         FoundNodelst := make([]FoundNode, K)
         for i:=0;i<len(k.AddrTab[bitindex].ContactLst);i++{
 			if k.AddrTab[bitindex].ContactLst[i].Host!=nil{

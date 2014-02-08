@@ -105,6 +105,7 @@ func  Update(k *Kademlia, contact Contact) error{
     return nil
 }
 
+
 func Search_Contact(kadem *Kademlia, id ID) (bool, Contact){
 
   bitindex :=  kadem.NodeID.Xor(id).PrefixLen()
@@ -145,7 +146,7 @@ func Get_Contact2(kadem *Kademlia, id ID) (bool, int){
 
 //////////
 func ShowC(kadem *Kademlia){
-	for bitindex:=0; bitindex<2; bitindex++{
+	for bitindex:=0; bitindex<BitNum; bitindex++{
 
 		contactlist:=kadem.AddrTab[bitindex].ContactLst
 		for i:=0; i<K; i++{
@@ -259,7 +260,7 @@ func DoPing(kadem *Kademlia, remoteHost net.IP, port uint16) bool{
 func DoStore(kadem *Kademlia, remoteContact *Contact, storeKey ID, storeValue []byte) bool{
     remoteHost:=remoteContact.Host
     remotePortstr:=Port2Str(remoteContact.Port)
-    fmt.Println("Start Store:")
+
     client, err := rpc.DialHTTP("tcp", remoteHost.String()+":"+remotePortstr)
     if err != nil {
         //log.Fatal("DialHTTP: ", err)
@@ -285,12 +286,9 @@ func DoStore(kadem *Kademlia, remoteContact *Contact, storeKey ID, storeValue []
     }
     if storeReq.MsgID.Equals(storeRes.MsgID){
         go Update(kadem, *remoteContact)
-
-		
-		fmt.Println("Store Success!")
         return true;
     }
-    fmt.Println("Store Failure!")
+    fmt.Println(remoteContact.NodeID.AsString(), " Store Failure!")
     return false;
 
 }
@@ -332,6 +330,12 @@ func DoFindNode(kadem *Kademlia, remoteContact *Contact, searchKey ID) bool{
         //fmt.Println(findNodeRes.Nodes)
 		for i:=0; i<len(findNodeRes.Nodes); i++{
 			if findNodeRes.Nodes[i].IPAddr!=""{
+				newcontact:=new(Contact)
+				newcontact.NodeID=findNodeRes.Nodes[i].NodeID
+				newcontact.Host=net.ParseIP(findNodeRes.Nodes[i].IPAddr)
+				newcontact.Port=findNodeRes.Nodes[i].Port
+				newcontact.queried=false
+				go Update(kadem, *newcontact)
 				fmt.Println(findNodeRes.Nodes[i].NodeID.AsString())
 			}
 		}
@@ -441,6 +445,12 @@ func DoFindValue(kadem *Kademlia, remoteContact *Contact, searchKey ID) bool{
           //fmt.Println(findValueRes.Nodes)
 		  for i:=0; i<len(findValueRes.Nodes); i++{
 			  if findValueRes.Nodes[i].IPAddr!=""{
+				  newcontact:=new(Contact)
+				  newcontact.NodeID=findValueRes.Nodes[i].NodeID
+				  newcontact.Host=net.ParseIP(findValueRes.Nodes[i].IPAddr)
+				  newcontact.Port=findValueRes.Nodes[i].Port
+				  newcontact.queried=false
+				  go Update(kadem, *newcontact)
 				  fmt.Println(findValueRes.Nodes[i].NodeID.AsString())
 			  }
 		  }
@@ -455,45 +465,163 @@ func DoFindValue(kadem *Kademlia, remoteContact *Contact, searchKey ID) bool{
 
 }
 
+type Ret struct{
+	value []byte
+	nodeFound bool
+	from ID
+}
+func DoFindValue2(kadem *Kademlia, remoteContact *Contact, searchKey ID, ret chan Ret) bool{
+    remoteHost:=remoteContact.Host
+    remotePortstr:=Port2Str(remoteContact.Port)
+    fmt.Println("Start FoundValue:")
+    client, err := rpc.DialHTTP("tcp", remoteHost.String()+":"+remotePortstr)
+    if err != nil {
+        //log.Fatal("DialHTTP: ", err)
+		
+		var retu Ret
+		retu.value=nil
+		retu.nodeFound=false
+		ret<-retu
+        return false
+    }
+
+    findValueReq := new(FindValueRequest)
+
+    findValueReq.Sender.Host=kadem.Host
+    findValueReq.Sender.Port=kadem.Port
+    findValueReq.Sender.NodeID=kadem.NodeID
+
+    findValueReq.MsgID=NewRandomID()
+
+    findValueReq.Key=searchKey
+
+    var findValueRes FindValueResult
+
+    err = client.Call("Kademlia.FindValue", findValueReq, &findValueRes)
+
+    if err != nil {
+        //log.Fatal("Call: ", err)
+		var retu Ret
+		retu.value=nil
+		retu.nodeFound=false
+		ret<-retu
+        return false
+    }
+
+    if findValueReq.MsgID.Equals(findValueRes.MsgID){
+        go Update(kadem, *remoteContact)
+
+		
+		fmt.Println("Find Value Success!")
+        if findValueRes.Value != nil{
+          fmt.Println("Value Found:", string(findValueRes.Value), " from ", remoteContact.NodeID.AsString())
+		  var retu Ret
+		  retu.value=findValueRes.Value
+		  retu.nodeFound=false
+		  retu.from=remoteContact.NodeID
+		  ret<-retu
+        }else{
+          fmt.Println("Node Found:")
+          //fmt.Println(findValueRes.Nodes)
+		  for i:=0; i<len(findValueRes.Nodes); i++{
+			  if findValueRes.Nodes[i].IPAddr!=""{
+				  newcontact:=new(Contact)
+				  newcontact.NodeID=findValueRes.Nodes[i].NodeID
+				  newcontact.Host=net.ParseIP(findValueRes.Nodes[i].IPAddr)
+				  newcontact.Port=findValueRes.Nodes[i].Port
+				  newcontact.queried=false
+				  go Update(kadem, *newcontact)
+				  fmt.Println(findValueRes.Nodes[i].NodeID.AsString())
+			  }
+		  }
+		  var retu Ret
+		  retu.value=nil
+		  retu.nodeFound=true
+		  ret<-retu
+        }
+        return true;
+    }
+    fmt.Println("FindValue Failure!")
+	var retu Ret
+	retu.value=nil
+	retu.nodeFound=false
+	ret<-retu
+    return false;
 
 
 
 
-func IterativeStore(kadem *Kademlia, storeKey ID, storeValue []byte) {
-	//bitindex:=kadem.NodeID.Xor(storeKey).PrefixLen()
-	
-	
-	
 }
 
-func IterativeFindNode(kadem *Kademlia, searchKey ID) (bool, error) {
+
+
+func IterativeStore(kadem *Kademlia, storeKey ID, storeValue []byte)  error{
+	nodes, err:=IterativeFindNode(kadem, storeKey)
+	if err!=nil{
+		fmt.Println("IterativeStore Error: cannot perform IterativeFindNode")
+		return errors.New("cannot perform IterativeFindNode")
+	}
+	fmt.Println("IterativeStore node list: ")
+	fmt.Println("---------------------------------------")
+
+	for i:=0; i<len(nodes); i++{
+		r:=DoStore(kadem, &nodes[i], storeKey, storeValue)
+		if !r{
+			fmt.Println("---------------------------------------")
+			return errors.New("DoStore error")
+		}
+		fmt.Println(nodes[i].NodeID.AsString())
+	}
+	fmt.Println("---------------------------------------")
+	return nil
+}
+
+func IterativeFindNode(kadem *Kademlia, searchKey ID) ([]Contact, error) {
 	finished:=false
 	shortlist:=getClosestContacts(kadem, searchKey)
 	if len(shortlist)==0{
 		fmt.Println("No contact in list")
-		return false, errors.New("No contact")
+		return nil, errors.New("No contact")
 	}
 	closestNode:=shortlist[0]
+	to:=make(chan int, 1)
+	go setTimer(to)
 	nodes:=make([]Contact, 0)
 	for !finished{
-		fmt.Println("shortlist length=", len(shortlist))
+
 		if(len(shortlist)==0){
 			finished=true
 			break
 		}
 		succ:=make(chan bool)
-		to:=make(chan int, Alpha)
+		foundKey:=false
 		for i:=0; i<len(shortlist); i++{
+			if shortlist[i].NodeID==searchKey{
+				foundKey=true
+				break
+			}
 			found, searchCon:=Search_Contact(kadem, shortlist[i].NodeID)
 			if found{
 				go DoFindNode2(kadem, &searchCon, searchKey, succ)
 			}else{
 				fmt.Println("Cannot perform FindNode")
-				return false, errors.New("Cannot perform FindNode")
+				iterativeHelper(kadem)
+				return nil, errors.New("Cannot perform FindNode")
 			}
 			
-			time.Sleep(time.Second*Timeout)
-			to<-1
+		}
+		if foundKey{
+			/*
+			fmt.Println("Found: ", searchKey.AsString())
+			fmt.Println("List of iterative find_node: ")
+			for i:=0; i<len(nodes); i++{
+				fmt.Println(nodes[i].NodeID.AsString())
+			}
+			iterativeHelper(kadem)
+			return true, nil
+			*/
+			finished=true
+			break
 		}
 		for i:=0; i<len(shortlist); i++{
 			select{
@@ -505,16 +633,21 @@ func IterativeFindNode(kadem *Kademlia, searchKey ID) (bool, error) {
 					break
 				}
 			case <-to:
-				copy(shortlist[i:], shortlist[i+1:])
-				shortlist[len(shortlist)-1]=nil
-				shortlist=shortlist[:len(shortlist)-1]
-				continue
+				fmt.Println("timeout")
+				finished=true
+				break
 			}
 			
 		}
 		shortlist=getClosestContacts(kadem, searchKey)
 		if len(shortlist)<=0{
-			return false, errors.New("Cannot find it.")
+			if closestNode.NodeID==searchKey{
+				iterativeHelper(kadem)
+				return nodes, nil
+			}else{
+				iterativeHelper(kadem)
+				return nil, errors.New("Cannot find it.")
+			}
 		}
 		d1:=kadem.NodeID.Xor(closestNode.NodeID).PrefixLen()
 		d2:=kadem.NodeID.Xor(shortlist[0].NodeID).PrefixLen()
@@ -526,11 +659,14 @@ func IterativeFindNode(kadem *Kademlia, searchKey ID) (bool, error) {
 			closestNode=shortlist[0]
 		}
 	}
+	
 	fmt.Println("List of iterative find_node: ")
 	for i:=0; i<len(nodes); i++{
 		fmt.Println(nodes[i].NodeID.AsString())
 	}
-	return true, nil
+	
+	iterativeHelper(kadem)
+	return nodes, nil
 }
 func getClosestContacts(kadem *Kademlia, key ID) []*Contact{
 	//Alpha non-contacted closest contacts
@@ -541,9 +677,11 @@ func getClosestContacts(kadem *Kademlia, key ID) []*Contact{
     }
 	length:=0
 	//find Alpha closest nodes
+
 	for i:=0; i<K; i++{
 		if kadem.AddrTab[bitindex].ContactLst[i].Host!=nil{
 			ret=append(ret, &kadem.AddrTab[bitindex].ContactLst[i])
+
 			length++
 			if(length>=Alpha){
 				return ret
@@ -555,8 +693,10 @@ func getClosestContacts(kadem *Kademlia, key ID) []*Contact{
 			for j:=0; j<K&&length<K; j++{
 				if kadem.AddrTab[bitindex-i].ContactLst[j].queried==false&&kadem.AddrTab[bitindex-i].ContactLst[j].Host!=nil{
 					ret=append(ret, &kadem.AddrTab[bitindex-i].ContactLst[j])
+
 					length++
 					if(length>=Alpha){
+
 						return ret
 					}
 				}
@@ -566,8 +706,10 @@ func getClosestContacts(kadem *Kademlia, key ID) []*Contact{
 			for j:=0; j<K&&length<K; j++{
 				if kadem.AddrTab[i+bitindex].ContactLst[j].queried==false&&kadem.AddrTab[i+bitindex].ContactLst[j].Host!=nil{
 					ret=append(ret, &kadem.AddrTab[i+bitindex].ContactLst[j])
+					fmt.Println(kadem.AddrTab[i+bitindex].ContactLst[j])
 					length++
 					if(length>=Alpha){
+
 						return ret
 					}
 				}
@@ -577,9 +719,112 @@ func getClosestContacts(kadem *Kademlia, key ID) []*Contact{
 	}
 	return ret
 }
+func iterativeHelper(kadem *Kademlia){
+	for bitindex:=0; bitindex<BitNum; bitindex++{
+		for i:=0; i<K; i++{
+			kadem.AddrTab[bitindex].ContactLst[i].queried=false
+		}
+	}
+}
+func setQueried(kadem *Kademlia, id ID){
+	bitindex:=kadem.NodeID.Xor(id).PrefixLen()
+	for i:=0; i<len(kadem.AddrTab[bitindex].ContactLst); i++{
+		if id.Equals(kadem.AddrTab[bitindex].ContactLst[i].NodeID){
+			kadem.AddrTab[bitindex].ContactLst[i].queried=true
+			break
+		}
+	}
+}
+func setTimer(t chan int){
+	time.Sleep(time.Second*Timeout)
+	t<-1
+}
+func IterativeFindValue(kadem *Kademlia, searchKey ID) (bool, error) {
+	finished:=false
+	shortlist:=getClosestContacts(kadem, searchKey)
+	closestNode:=shortlist[0]
+	if len(shortlist)==0{
+		fmt.Println("No contact in list")
+		return false, errors.New("No contact")
+	}
+	to:=make(chan int, 1)
+	go setTimer(to)
+	nodes:=make([]Contact, 0)
+	for !finished{
+		fmt.Println("len of shortlist: ", len(shortlist))
+		if len(shortlist)==0{
+			finished=true
+			break
+		}
+		closestNode=shortlist[0]
+		ret:=make(chan Ret)
+		for i:=0; i<len(shortlist); i++{
+			found, searchCon:=Search_Contact(kadem, shortlist[i].NodeID)
+			if found{
+				fmt.Println("DoFindValue: ", searchCon.NodeID.AsString())
+				go DoFindValue2(kadem, &searchCon, searchKey, ret)
 
-func IterativeFindValue(kadem *Kademlia, searchKey ID) {
+			}else{
+				fmt.Println("Cannot perform FindValue")
+				iterativeHelper(kadem)
+				return false, errors.New("Cannot perform FindValue")
+			}
+			
+		}
+		for i:=0; i<len(shortlist); i++{
+			select{
+			case r:=<-ret:
+				if r.value!=nil{
+					//vallue found
+					fmt.Println("iterative find value: ", string(r.value), " from ", r.from.AsString())
+					iterativeHelper(kadem)
+					//store to closestNode
+					DoStore(kadem, closestNode, searchKey, r.value)
+					
+					return true, nil
+				}else{
+					//shortlist[i].queried=true
+					/////
+					id:=shortlist[i].NodeID
+					bitindex:=kadem.NodeID.Xor(id).PrefixLen()
+					for i:=0; i<len(kadem.AddrTab[bitindex].ContactLst); i++{
+						if id.Equals(kadem.AddrTab[bitindex].ContactLst[i].NodeID){
+							fmt.Println("queried", shortlist[i].NodeID)
+							kadem.AddrTab[bitindex].ContactLst[i].queried=true
+							break
+						}
+					}
+					nodes=append(nodes, *shortlist[i])
+					if len(nodes)>=K{
+						finished=true
+						break
+					}
+				}
+			case <-to:
+				fmt.Println("timeout")
+				finished=true
+				break
+			}
+		}
+		shortlist=getClosestContacts(kadem, searchKey)
+		if len(shortlist)<=0{
+			finished=true
+			break
+		}
+		d1:=kadem.NodeID.Xor(closestNode.NodeID).PrefixLen()
+		d2:=kadem.NodeID.Xor(shortlist[0].NodeID).PrefixLen()
+		if d1<=d2{
+			//no node return closer than closest node already seen
+			finished=true
+			break
+		}else{
+			closestNode=shortlist[0]
+		}
+	}
 	
+	fmt.Println("iterativeFindValue ERR")
+	iterativeHelper(kadem)
+	return true, nil
 }
 
 
