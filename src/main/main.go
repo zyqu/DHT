@@ -40,8 +40,10 @@ func main() {
     kademClient.Host=net.ParseIP(iptokens[0])
     kademClient.Port=kademlia.Str2Port(iptokens[1])
 
-    kademServer := kademlia.NewKademlia()
-    kademlia.StartServ(kademServer,listenStr)
+	kademlia.StartServ(kademClient, listenStr)
+
+    //kademServer := kademlia.NewKademlia()
+    //kademlia.StartServ(kademServer,listenStr)
     //kademlia.StartServ(kademClient,firstPeerStr)
 /*
     rpc.Register(kadem)
@@ -92,8 +94,7 @@ func main() {
 			///////for test
 		case "showc":
 			kademlia.ShowC(kademClient)
-		case "shows":
-			kademlia.ShowC(kademServer)
+
 		case "dis":
 			id1, _:=kademlia.FromString(tokens[1])
 			id2, _:=kademlia.FromString(tokens[2])
@@ -169,7 +170,7 @@ func main() {
                 break
             }
             keyID, _ := kademlia.FromString(tokens[1])
-            kademlia.Local_Find_Value(kademServer, keyID)
+            kademlia.Local_Find_Value(kademClient, keyID)
 
         case "get_contact":
             if len(tokens) != 2{

@@ -32,7 +32,9 @@ type Pong struct {
 
 func (k *Kademlia) Ping(ping Ping, pong *Pong) error {
     // This one's a freebie.
-    go Update(k, ping.Sender)
+    //go Update(k, ping.Sender)
+	k.ch<-ping.Sender
+	go Update2(k)
 	
     fmt.Println("Sever NodeID: ", k.NodeID.AsString())
     pong.MsgID = CopyID(ping.MsgID)
@@ -59,8 +61,9 @@ type StoreResult struct {
 
 func (k *Kademlia) Store(req StoreRequest, res *StoreResult) error {
     // TODO: Implement.
-    go Update(k, req.Sender)
-
+    //go Update(k, req.Sender)
+	k.ch<-req.Sender
+	go Update2(k)
 	
 	k.Localmap[req.Key]=req.Value
     fmt.Println("\n")
@@ -92,14 +95,15 @@ type FindNodeResult struct {
 
 func (k *Kademlia) FindNode(req FindNodeRequest, res *FindNodeResult) error {
     // TODO: Implement.
-    Update(k, req.Sender)
-
+    //go Update(k, req.Sender)
+	k.ch<-req.Sender
+	go Update2(k)
 
     bitindex := k.NodeID.Xor(req.NodeID).PrefixLen()
     tempFoundNode:=new(FoundNode)
     FoundNodelst := make([]FoundNode, K)
     for i:=0;i<len(k.AddrTab[bitindex].ContactLst);i++{
-		if(k.AddrTab[bitindex].ContactLst[i].Host!=nil){
+		if(k.AddrTab[bitindex].ContactLst[i].Host!=nil&&k.AddrTab[bitindex].ContactLst[i].NodeID!=req.Sender.NodeID){
 			tempFoundNode.NodeID=k.AddrTab[bitindex].ContactLst[i].NodeID
 			tempFoundNode.Port=k.AddrTab[bitindex].ContactLst[i].Port
 			tempFoundNode.IPAddr=k.AddrTab[bitindex].ContactLst[i].Host.String()
@@ -133,8 +137,10 @@ type FindValueResult struct {
 
 func (k *Kademlia) FindValue(req FindValueRequest, res *FindValueResult) error {
     // TODO: Implement.
-    Update(k, req.Sender)
-
+    //go Update(k, req.Sender)
+	k.ch<-req.Sender
+	go Update2(k)
+	
 	found, val:=Local_Find_Value(k,req.Key)
     res.Value=val
     if found == false{
@@ -142,7 +148,7 @@ func (k *Kademlia) FindValue(req FindValueRequest, res *FindValueResult) error {
 		tempFoundNode:=new(FoundNode)
         FoundNodelst := make([]FoundNode, K)
         for i:=0;i<len(k.AddrTab[bitindex].ContactLst);i++{
-			if k.AddrTab[bitindex].ContactLst[i].Host!=nil{
+			if k.AddrTab[bitindex].ContactLst[i].Host!=nil&&k.AddrTab[bitindex].ContactLst[i].NodeID!=req.Sender.NodeID{
 				tempFoundNode.NodeID=k.AddrTab[bitindex].ContactLst[i].NodeID
 				tempFoundNode.Port=k.AddrTab[bitindex].ContactLst[i].Port
 				tempFoundNode.IPAddr=k.AddrTab[bitindex].ContactLst[i].Host.String()
