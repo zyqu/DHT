@@ -15,7 +15,7 @@ import (
 const K=20
 const BitNum=160
 const Alpha=3
-const Timeout=6
+const Timeout =300
 // Contains the core kademlia type. In addition to core state, this type serves
 // as a receiver for the RPC methods, which is required by that package.
 
@@ -139,8 +139,8 @@ func  Update(k *Kademlia, contact Contact) error{
 
     } else {
       if full==false{
-        fmt.Println("Add Contact")
-        fmt.Println(contact.NodeID.AsString())
+        //fmt.Println("Add Contact")
+        //fmt.Println(contact.NodeID.AsString())
         k.AddrTab[bitindex].ContactLst[GetIndexLst(k.AddrTab[bitindex].ContactLst)]=contact
         return nil
       } else{
@@ -663,8 +663,8 @@ func IterativeFindNode(kadem *Kademlia, searchKey ID) ([]Contact, error) {
 		return nil, errors.New("No contact")
 	}
 	closestNode:=shortlist[0]
-	to:=make(chan int, 1)
-	go setTimer(to)
+	//to:=make(chan int, 1)
+	//go setTimer(to)
 	nodes:=make([]Contact, 0)
 	for !finished{
 
@@ -674,8 +674,12 @@ func IterativeFindNode(kadem *Kademlia, searchKey ID) ([]Contact, error) {
 		}
 		succ:=make(chan bool)
 		foundKey:=false
+		////////
+		to:=make(chan int, 1)
+		
 		for i:=0; i<len(shortlist); i++{
 			if shortlist[i].NodeID==searchKey{
+				nodes=append(nodes, *shortlist[i])
 				fmt.Println("Searchkey is found.")
 				foundKey=true
 				break
@@ -683,6 +687,7 @@ func IterativeFindNode(kadem *Kademlia, searchKey ID) ([]Contact, error) {
 			found, searchCon:=Search_Contact(kadem, shortlist[i].NodeID)
 			if found{
 				go DoFindNode2(kadem, &searchCon, searchKey, succ)
+				go setTimer(to)
 			}else{
 				fmt.Println("Cannot perform FindNode")
 				iterativeHelper(kadem)
@@ -706,7 +711,10 @@ func IterativeFindNode(kadem *Kademlia, searchKey ID) ([]Contact, error) {
 		for i:=0; i<len(shortlist); i++{
 			select{
 			case <-succ:
-				shortlist[i].queried=true
+				//shortlist[i].queried=true
+				/////////////////
+
+				setQueried(kadem, shortlist[i].NodeID)
 				nodes=append(nodes, *shortlist[i])
 				if len(nodes)>=K{
 					finished=true
@@ -721,20 +729,14 @@ func IterativeFindNode(kadem *Kademlia, searchKey ID) ([]Contact, error) {
 		}
 		shortlist=getClosestContacts(kadem, searchKey)
 		if len(shortlist)<=0{
-			if shortlist[0].NodeID==searchKey{
-				fmt.Println("Searchkey is found.")
-				finished=true
-				break
-			}else{
-				iterativeHelper(kadem)
-				return nil, errors.New("Cannot find it.")
-			}
+			finished=true
+			break
 		}
 		d1:=kadem.NodeID.Xor(closestNode.NodeID).PrefixLen()
 		d2:=kadem.NodeID.Xor(shortlist[0].NodeID).PrefixLen()
-		if d1==d2{
+		if d1<d2{
 			//no node return closer than closest node already seen
-			fmt.Println("Searchkey is not found.")
+			fmt.Println("Searchkey is not found.", closestNode.NodeID.AsString(), d1, shortlist[0].NodeID.AsString(), d2)
 			finished=true
 			break
 		}else{
@@ -742,7 +744,7 @@ func IterativeFindNode(kadem *Kademlia, searchKey ID) ([]Contact, error) {
 		}
 	}
 	
-	fmt.Println("List of iterative find_node: ")
+	fmt.Println("List of iterativeFindNode: ")
 	for i:=0; i<len(nodes); i++{
 		fmt.Println(nodes[i].NodeID.AsString())
 	}
@@ -761,7 +763,7 @@ func getClosestContacts(kadem *Kademlia, key ID) []*Contact{
 	//find Alpha closest nodes
 
 	for i:=0; i<K; i++{
-		if kadem.AddrTab[bitindex].ContactLst[i].Host!=nil{
+		if kadem.AddrTab[bitindex].ContactLst[i].queried==false&&kadem.AddrTab[bitindex].ContactLst[i].Host!=nil{
 			ret=append(ret, &kadem.AddrTab[bitindex].ContactLst[i])
 
 			length++
@@ -818,7 +820,7 @@ func setQueried(kadem *Kademlia, id ID){
 	}
 }
 func setTimer(t chan int){
-	time.Sleep(time.Second*Timeout)
+	time.Sleep(time.Millisecond*Timeout)
 	t<-1
 }
 func IterativeFindValue(kadem *Kademlia, searchKey ID) (bool, error) {
