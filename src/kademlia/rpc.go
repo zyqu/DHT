@@ -99,7 +99,10 @@ func (k *Kademlia) FindNode(req FindNodeRequest, res *FindNodeResult) error {
 	k.ch<-req.Sender
 	go Update2(k)
 
-    bitindex := k.NodeID.Xor(req.NodeID).PrefixLen()
+    bitindex := k.NodeID.Xor(req.NodeID).PrefixLen()-1
+	if bitindex<0{
+		bitindex=0
+	}
     tempFoundNode:=new(FoundNode)
     FoundNodelst := make([]FoundNode, K)
     for i:=0;i<len(k.AddrTab[bitindex].ContactLst);i++{
@@ -144,7 +147,10 @@ func (k *Kademlia) FindValue(req FindValueRequest, res *FindValueResult) error {
 	found, val:=Local_Find_Value(k,req.Key)
     res.Value=val
     if found == false{
-        bitindex := k.NodeID.Xor(req.Key).PrefixLen()
+        bitindex := k.NodeID.Xor(req.Key).PrefixLen()-1
+		if bitindex<0{
+			bitindex=0
+		}
 		tempFoundNode:=new(FoundNode)
         FoundNodelst := make([]FoundNode, K)
         for i:=0;i<len(k.AddrTab[bitindex].ContactLst);i++{

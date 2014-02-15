@@ -52,7 +52,7 @@ func  Update2(k *Kademlia) error{
     selfid:=k.NodeID
     requestid:=contact.NodeID
 
-    bitindex := selfid.Xor(requestid).PrefixLen()
+    bitindex := selfid.Xor(requestid).PrefixLen()-1
 
     if bitindex < 0{
       bitindex=0
@@ -112,7 +112,7 @@ func  Update(k *Kademlia, contact Contact) error{
     selfid:=k.NodeID
     requestid:=contact.NodeID
 
-    bitindex := selfid.Xor(requestid).PrefixLen()
+    bitindex := selfid.Xor(requestid).PrefixLen()-1
 
     if bitindex < 0{
       bitindex=0
@@ -168,7 +168,7 @@ func  Update(k *Kademlia, contact Contact) error{
 
 func Search_Contact(kadem *Kademlia, id ID) (bool, Contact){
 
-  bitindex :=  kadem.NodeID.Xor(id).PrefixLen()
+  bitindex :=  kadem.NodeID.Xor(id).PrefixLen()-1
   if bitindex < 0{
       bitindex=0
   }
@@ -187,7 +187,7 @@ func Search_Contact(kadem *Kademlia, id ID) (bool, Contact){
 
 func Get_Contact2(kadem *Kademlia, id ID) (bool, int){
 
-  bitindex :=  kadem.NodeID.Xor(id).PrefixLen()
+  bitindex :=  kadem.NodeID.Xor(id).PrefixLen()-1
   if bitindex < 0{
       bitindex=0
   }
@@ -205,6 +205,7 @@ func Get_Contact2(kadem *Kademlia, id ID) (bool, int){
 
 
 //////////
+//for test
 func ShowC(kadem *Kademlia){
 	for bitindex:=0; bitindex<BitNum; bitindex++{
 
@@ -222,7 +223,7 @@ func ShowC(kadem *Kademlia){
 
 func Get_Contact(kadem *Kademlia, id ID) (bool, int){
 
-  bitindex :=  kadem.NodeID.Xor(id).PrefixLen()
+  bitindex :=  kadem.NodeID.Xor(id).PrefixLen()-1
   if bitindex < 0{
       bitindex=0
   }
@@ -238,6 +239,20 @@ func Get_Contact(kadem *Kademlia, id ID) (bool, int){
 
   fmt.Println("ERR")
   return false, -1
+}
+
+func Find_Contact(kadem *Kademlia, id ID) (net.IP, uint16){
+	bitindex:=kadem.NodeID.Xor(id).PrefixLen()-1
+	if bitindex<0{
+		bitindex=0
+	}
+	contactlst:=kadem.AddrTab[bitindex].ContactLst
+	for i:=0; i<K; i++{
+		if contactlst[i].NodeID.Equals(id)==true&&contactlst[i].Host!=nil{
+			return contactlst[i].Host, contactlst[i].Port
+		}
+	}
+	return nil, 0
 }
 
 func Local_Find_Value(kadem *Kademlia, key ID) (bool, []byte){
@@ -678,12 +693,7 @@ func IterativeFindNode(kadem *Kademlia, searchKey ID) ([]Contact, error) {
 		to:=make(chan int, 1)
 		
 		for i:=0; i<len(shortlist); i++{
-			if shortlist[i].NodeID==searchKey{
-				nodes=append(nodes, *shortlist[i])
-				fmt.Println("Searchkey is found.")
-				foundKey=true
-				break
-			}
+			
 			found, searchCon:=Search_Contact(kadem, shortlist[i].NodeID)
 			if found{
 				go DoFindNode2(kadem, &searchCon, searchKey, succ)
@@ -711,9 +721,13 @@ func IterativeFindNode(kadem *Kademlia, searchKey ID) ([]Contact, error) {
 		for i:=0; i<len(shortlist); i++{
 			select{
 			case <-succ:
-				//shortlist[i].queried=true
-				/////////////////
-
+				//if node found and successfully pinged
+				if shortlist[i].NodeID==searchKey{
+					nodes=append(nodes, *shortlist[i])
+					fmt.Println("Searchkey is found.")
+					finished=true
+					break
+				}
 				setQueried(kadem, shortlist[i].NodeID)
 				nodes=append(nodes, *shortlist[i])
 				if len(nodes)>=K{
@@ -732,11 +746,16 @@ func IterativeFindNode(kadem *Kademlia, searchKey ID) ([]Contact, error) {
 			finished=true
 			break
 		}
-		d1:=kadem.NodeID.Xor(closestNode.NodeID).PrefixLen()
-		d2:=kadem.NodeID.Xor(shortlist[0].NodeID).PrefixLen()
+		d1:=kadem.NodeID.Xor(closestNode.NodeID).PrefixLen()-1
+		if d1<0{
+			d1=0
+		}
+		d2:=kadem.NodeID.Xor(shortlist[0].NodeID).PrefixLen()-1
+		if d2<0{
+			d2=0
+		}
 		if d1<d2{
 			//no node return closer than closest node already seen
-			fmt.Println("Searchkey is not found.", closestNode.NodeID.AsString(), d1, shortlist[0].NodeID.AsString(), d2)
 			finished=true
 			break
 		}else{
@@ -755,7 +774,10 @@ func IterativeFindNode(kadem *Kademlia, searchKey ID) ([]Contact, error) {
 func getClosestContacts(kadem *Kademlia, key ID) []*Contact{
 	//Alpha non-contacted closest contacts
 	ret:=make([]*Contact, 0)
-	bitindex:=kadem.NodeID.Xor(key).PrefixLen()
+	bitindex:=kadem.NodeID.Xor(key).PrefixLen()-1
+	if bitindex<0{
+		bitindex=0
+	}
     if bitindex < 0{
         bitindex=0
     }
@@ -811,7 +833,10 @@ func iterativeHelper(kadem *Kademlia){
 	}
 }
 func setQueried(kadem *Kademlia, id ID){
-	bitindex:=kadem.NodeID.Xor(id).PrefixLen()
+	bitindex:=kadem.NodeID.Xor(id).PrefixLen()-1
+	if bitindex<0{
+		bitindex=0
+	}
 	for i:=0; i<len(kadem.AddrTab[bitindex].ContactLst); i++{
 		if id.Equals(kadem.AddrTab[bitindex].ContactLst[i].NodeID){
 			kadem.AddrTab[bitindex].ContactLst[i].queried=true
@@ -826,11 +851,12 @@ func setTimer(t chan int){
 func IterativeFindValue(kadem *Kademlia, searchKey ID) (bool, error) {
 	finished:=false
 	shortlist:=getClosestContacts(kadem, searchKey)
-	closestNode:=shortlist[0]
+	
 	if len(shortlist)==0{
 		fmt.Println("No contact in list")
 		return false, errors.New("No contact")
 	}
+	closestNode:=shortlist[0]
 	to:=make(chan int, 1)
 	go setTimer(to)
 	nodes:=make([]Contact, 0)
@@ -870,7 +896,10 @@ func IterativeFindValue(kadem *Kademlia, searchKey ID) (bool, error) {
 					//shortlist[i].queried=true
 					/////
 					id:=shortlist[i].NodeID
-					bitindex:=kadem.NodeID.Xor(id).PrefixLen()
+					bitindex:=kadem.NodeID.Xor(id).PrefixLen()-1
+					if bitindex<0{
+						bitindex=0
+					}
 					for i:=0; i<len(kadem.AddrTab[bitindex].ContactLst); i++{
 						if id.Equals(kadem.AddrTab[bitindex].ContactLst[i].NodeID){
 							//fmt.Println("queried", shortlist[i].NodeID)
@@ -895,9 +924,15 @@ func IterativeFindValue(kadem *Kademlia, searchKey ID) (bool, error) {
 			finished=true
 			break
 		}
-		d1:=kadem.NodeID.Xor(closestNode.NodeID).PrefixLen()
-		d2:=kadem.NodeID.Xor(shortlist[0].NodeID).PrefixLen()
-		if d1<=d2{
+		d1:=kadem.NodeID.Xor(closestNode.NodeID).PrefixLen()-1
+		if d1<0{
+			d1=0
+		}
+		d2:=kadem.NodeID.Xor(shortlist[0].NodeID).PrefixLen()-1
+		if d2<0{
+			d2=0
+		}
+		if d1<d2{
 			//no node return closer than closest node already seen
 			finished=true
 			break

@@ -37,10 +37,22 @@ func main() {
     kademClient := kademlia.NewKademlia()
 
     iptokens:=strings.Split(firstPeerStr, ":")
-    kademClient.Host=net.ParseIP(iptokens[0])
-    kademClient.Port=kademlia.Str2Port(iptokens[1])
-
-	kademlia.StartServ(kademClient, listenStr)
+	ipaddr, err:=net.ResolveIPAddr("ip", iptokens[0])
+	if err==nil{
+    	kademClient.Host=net.ParseIP(ipaddr.String())
+    	kademClient.Port=kademlia.Str2Port(iptokens[1])
+	}else{
+		fmt.Println("Cannot resolve client ip: ", iptokens[0])
+		return
+	}
+	server:=strings.Split(listenStr, ":")
+	serverIP, err:=net.ResolveIPAddr("ip", server[0])
+	if err==nil{
+		kademlia.StartServ(kademClient, serverIP.String()+":"+server[1])
+	}else{
+		fmt.Println("Cannot resolve server ip")
+		return
+	}
 
     //kademServer := kademlia.NewKademlia()
     //kademlia.StartServ(kademServer,listenStr)
@@ -94,11 +106,6 @@ func main() {
 			///////for test
 		case "showc":
 			kademlia.ShowC(kademClient)
-
-		case "dis":
-			id1, _:=kademlia.FromString(tokens[1])
-			id2, _:=kademlia.FromString(tokens[2])
-			fmt.Println(id1.Xor(id2).PrefixLen())
 
         case "find_value":
             if len(tokens) != 3{
@@ -154,8 +161,21 @@ func main() {
             }
             if strings.Contains(tokens[1],":"){
                 iptokens:=strings.Split(tokens[1], ":")
-                kademlia.DoPing(kademClient, net.ParseIP(iptokens[0]), kademlia.Str2Port(iptokens[1]))
-            }
+				ipaddr, err:=net.ResolveIPAddr("ip", iptokens[0])
+				if err==nil{
+					kademlia.DoPing(kademClient, net.ParseIP(ipaddr.String()), kademlia.Str2Port(iptokens[1]))
+				}else{
+					fmt.Println("Cannot resolve IP")
+				}
+            }else{
+				targetID, _:=kademlia.FromString(tokens[1])
+				ipaddr, port:=kademlia.Find_Contact(kademClient, targetID)
+				if ipaddr!=nil{
+					kademlia.DoPing(kademClient, ipaddr, port)
+				}else{
+					fmt.Println("Cannot find contact")
+				}
+			}
 
         case "whoami":
             if len(tokens) != 1{
