@@ -6,6 +6,9 @@ package kademlia
 import (
     "net"
     "fmt"
+	//"io/ioutil"
+	"os"
+	"errors"
     )
 
 
@@ -52,11 +55,13 @@ type StoreRequest struct {
     MsgID ID
     Key ID
     Value []byte
+	
 }
 
 type StoreResult struct {
     MsgID ID
     Err error
+	
 }
 
 func (k *Kademlia) Store(req StoreRequest, res *StoreResult) error {
@@ -66,12 +71,19 @@ func (k *Kademlia) Store(req StoreRequest, res *StoreResult) error {
 	go Update2(k)
 	
 	k.Localmap[req.Key]=req.Value
-    fmt.Println("\n")
+    //fmt.Println("\n")
     res.MsgID=CopyID(req.MsgID)
     res.Err=nil
     return nil
 }
 
+/*
+func (k *Kademlia) SavePage(req StoreRequest) error{
+	filename:="./tmp/"+k.NodeID.AsString()+"/"+req.MsgID.AsString()+"/"+req.Url
+	ioutil.WriteFile(filename, string(req.Value), 0x777)
+	return nil
+}
+*/
 
 // FIND_NODE
 type FindNodeRequest struct {
@@ -163,9 +175,39 @@ func (k *Kademlia) FindValue(req FindValueRequest, res *FindValueResult) error {
         }
         res.Nodes=FoundNodelst
     }
-
+	
     res.MsgID=CopyID(req.MsgID)
     res.Err=nil
     return nil
+}
+
+//similar to previous operation
+type GetPageRequest struct {
+    Sender Contact
+    MsgID ID
+	Url string
+	
+}
+type GetPageResult struct {
+    MsgID ID
+	Page *os.File
+    Err error
+}
+
+func (k *Kademlia) GetPage(req GetPageRequest, res *GetPageResult) error{
+	k.ch<-req.Sender
+	go Update2(k)
+	///////////////
+	key, _:=FromString(req.Url)
+	found, file:=Local_Find_File(k, key)
+	res.MsgID=CopyID(req.MsgID)
+	if found==false{
+		res.Page=nil
+		res.Err=errors.New("Page not found")
+		return nil
+	}
+	res.Page=file
+	res.Err=nil
+	return nil
 }
 

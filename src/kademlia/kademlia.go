@@ -10,6 +10,8 @@ import (
   "strings"
   "net/http"
   "errors"
+  "os"
+  "os/exec"
   )
 
 const K=20
@@ -264,6 +266,17 @@ func Local_Find_Value(kadem *Kademlia, key ID) (bool, []byte){
 	}
   return ok, val
 }
+///////////////////////
+func Local_Find_File(kadem *Kademlia, key ID) (bool, *os.File){
+	filename:=key.AsString()
+	//files, err:=os.Open("./tmp/"+kadem.NodeID.AsString()+filename)
+	files, err:=os.Open("./"+filename)
+	if err!=nil{
+		fmt.Println(err)
+		return false, nil
+	}
+	return true, files
+}
 
 func Port2Str(port uint16) string{
   return strconv.Itoa(int(port))
@@ -292,6 +305,8 @@ func StartServ(kadem *Kademlia, ipport string) bool{
   kadem.Port=Str2Port(iptokens[1])
   // Serve forever.
   go http.Serve(l, nil)
+  os.Mkdir("./tmp/"+kadem.NodeID.AsString(), 0700)
+
   return true
 }
 
@@ -327,10 +342,10 @@ func DoPing(kadem *Kademlia, remoteHost net.IP, port uint16) bool{
 		kadem.ch<-pong.Sender
 		go Update2(kadem)
 
-		fmt.Println("Ping Success!")
+		//fmt.Println("Ping Success!")
         return true;
     }
-    fmt.Println("Ping Failure!")
+    //fmt.Println("Ping Failure!")
     return false;
 }
 
@@ -963,7 +978,17 @@ func NewKademlia() *Kademlia {
     //retNode.AddrTab[152].ContactLst[0].NodeID, _=FromString("c3744506eaee5ffe77b580a5676c59d5776587cb")
     //fmt.Println(retNode.AddrTab[152].ContactLst[0].Host==nil)
     //fmt.Println(retNode.AddrTab[152].ContactLst)
+	
+	
     return retNode
 }
 
-
+func HTMLParser(file string) (bool, error){
+	if _, err:=os.Stat(file); os.IsNotExist(err){
+		fmt.Println("No such file")
+		return false, errors.New("No such file")
+	}
+	cmd:=exec.Command("python", "src/href.py", file)
+	cmd.Run()
+	return true, nil
+}

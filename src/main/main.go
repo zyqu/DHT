@@ -12,6 +12,7 @@ import (
     //"net/rpc"
     "time"
     "strings"
+	//"io/ioutil"
 )
 
 import (
@@ -23,6 +24,7 @@ func main() {
     // By default, Go seeds its RNG with 1. This would cause every program to
     // generate the same sequence of IDs.
     rand.Seed(time.Now().UnixNano())
+	
 
     // Get the bind and connect connection strings from command-line arguments.
     flag.Parse()
@@ -53,6 +55,10 @@ func main() {
 		fmt.Println("Cannot resolve server ip")
 		return
 	}
+	////////////////////////////
+	//kademlia.HTMLParser("tmp.html")
+	
+	
 
     //kademServer := kademlia.NewKademlia()
     //kademlia.StartServ(kademServer,listenStr)
