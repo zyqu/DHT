@@ -8,10 +8,11 @@ import (
   "strconv"
   "net/rpc"
   "strings"
-  "net/http"
   "errors"
   "os"
   "os/exec"
+  "net/http"
+  "io/ioutil"
   )
 
 const K=20
@@ -981,6 +982,51 @@ func NewKademlia() *Kademlia {
 	
 	
     return retNode
+}
+
+func check(e error){
+  if e != nil{
+    panic(e)
+  }
+}
+
+func FetchUrl(url string)(int){
+  webpageDSroot:="/Users/zyqu/Study/EECS345/proj1/DHT/webpageDS/"
+  strkey:=strings.Replace(url,"http://en.wikipedia.org/wiki/","",1)
+  filename:=webpageDSroot+strkey+".html"
+  fmt.Println(filename)
+  resp, err := http.Get(url)
+  if err != nil{
+    fmt.Printf("%s",err)
+    return -1
+    //url not accessabile
+  }else{
+    defer resp.Body.Close()
+    body, bodyerr := ioutil.ReadAll(resp.Body)
+    if bodyerr != nil{
+      fmt.Printf("%s",bodyerr)
+      return -1
+      //read response body error
+    }else{
+      /*f, openerr := os.Create(filename)
+      check(openerr)
+      writeerr := ioutil.WriteFile(filename, body, 0644)
+      check(writeerr)
+      f.Sync()
+      f.Close()*/
+
+      f, openerr := os.Create(filename)
+      check(openerr)
+
+      _,writeerr:=f.Write(body)
+      check(writeerr)
+      f.Sync()
+      f.Close()
+
+      return 0
+    }
+  }
+  return 0
 }
 
 func HTMLParser(file string) (bool, error){

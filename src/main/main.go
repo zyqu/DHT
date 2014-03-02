@@ -110,6 +110,9 @@ func main() {
 
         switch tokens[0] {
 			///////for test
+
+        case "fetchurl":
+            kademlia.FetchUrl("http://en.wikipedia.org/wiki/Credit_card")
 		case "showc":
 			kademlia.ShowC(kademClient)
 
