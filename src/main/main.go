@@ -8,11 +8,11 @@ import (
     "log"
     "math/rand"
     "net"
-    //"net/http"
+    "net/http"
     //"net/rpc"
     "time"
     "strings"
-	//"io/ioutil"
+	"io/ioutil"
 )
 
 import (
@@ -56,8 +56,12 @@ func main() {
 		return
 	}
 	////////////////////////////
-	//kademlia.HTMLParser("tmp.html")
-	
+	/*
+	resp, _:=http.Get("http://en.wikipedia.org/wiki/Kademlia")
+    defer resp.Body.Close()
+    body, _ := ioutil.ReadAll(resp.Body)
+	kademlia.HTMLParser(string(body))
+	*/
 	
 
     //kademServer := kademlia.NewKademlia()

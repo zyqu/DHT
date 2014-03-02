@@ -1029,7 +1029,8 @@ func FetchUrl(url string)(int){
   return 0
 }
 
-func HTMLParser(file string) (bool, error){
+func HTMLParser(body string) (string, error){
+	/*
 	if _, err:=os.Stat(file); os.IsNotExist(err){
 		fmt.Println("No such file")
 		return false, errors.New("No such file")
@@ -1037,4 +1038,14 @@ func HTMLParser(file string) (bool, error){
 	cmd:=exec.Command("python", "src/href.py", file)
 	cmd.Run()
 	return true, nil
+	*/
+	cmd:=exec.Command("python", "src/href.py", string(body))
+	out, err:=cmd.Output()
+	if err!=nil{
+		fmt.Println("ERROR with executing python script ", err)
+		return "", err
+	}
+	fmt.Println(string(out))
+	return string(out), nil
+	
 }
