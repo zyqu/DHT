@@ -1008,18 +1008,20 @@ func FetchUrl(url string)(int){
       return -1
       //read response body error
     }else{
-      /*f, openerr := os.Create(filename)
-      check(openerr)
-      writeerr := ioutil.WriteFile(filename, body, 0644)
-      check(writeerr)
-      f.Sync()
-      f.Close()*/
-
       f, openerr := os.Create(filename)
       check(openerr)
 
-      _,writeerr:=f.Write(body)
+      strbody:=string(body[:])
+
+      
+      stringconvert , _ := HTMLParser(strbody)
+      _,writeerr := f.Write([]byte(stringconvert))
       check(writeerr)
+
+
+      //f.WriteString(strbody)
+
+
       f.Sync()
       f.Close()
 

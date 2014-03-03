@@ -8,11 +8,11 @@ import (
     "log"
     "math/rand"
     "net"
-    "net/http"
+    //"net/http"
     //"net/rpc"
     "time"
     "strings"
-	"io/ioutil"
+	//"io/ioutil"
 )
 
 import (
