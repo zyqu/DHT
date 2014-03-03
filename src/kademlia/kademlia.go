@@ -991,7 +991,7 @@ func check(e error){
 }
 
 func FetchUrl(kadem *Kademlia, url string)(int){
-  webpageDSroot:="/Users/zyqu/Study/EECS345/proj1/DHT/webpageDS/"
+  webpageDSroot:="./webpageDS/"
   strkey:=strings.Replace(url,"http://en.wikipedia.org/wiki/","",1)
   filename:=webpageDSroot+strkey+".html"
   fmt.Println(filename)
