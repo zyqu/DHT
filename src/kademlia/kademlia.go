@@ -971,7 +971,7 @@ func NewKademlia() *Kademlia {
     retNode.NodeID=NewRandomID()
     //retNode.NodeID,_ = FromString("c3744506eaee5ffe77b580a5676c59d5776587ca")
     retNode.Localmap = make(map[ID][]byte)
-	retNode.ch=make(chan Contact, 1)
+	  retNode.ch=make(chan Contact, 1)
     //retNode.AddrTab=make(Bucket, BitNum)
     //retNode.Host=
     //retNode.Port=
@@ -990,7 +990,7 @@ func check(e error){
   }
 }
 
-func FetchUrl(url string)(int){
+func FetchUrl(kadem *Kademlia, url string)(int){
   webpageDSroot:="/Users/zyqu/Study/EECS345/proj1/DHT/webpageDS/"
   strkey:=strings.Replace(url,"http://en.wikipedia.org/wiki/","",1)
   filename:=webpageDSroot+strkey+".html"
@@ -1015,12 +1015,14 @@ func FetchUrl(url string)(int){
 
       
       stringconvert , _ := HTMLParser(strbody)
-      _,writeerr := f.Write([]byte(stringconvert))
+      byteconvert:=[]byte(stringconvert)
+
+      //write to localmap
+      urlID,_ := FromString(url)
+      kadem.Localmap[urlID]=byteconvert
+
+      _,writeerr := f.Write(byteconvert)
       check(writeerr)
-
-
-      //f.WriteString(strbody)
-
 
       f.Sync()
       f.Close()
@@ -1047,7 +1049,7 @@ func HTMLParser(body string) (string, error){
 		fmt.Println("ERROR with executing python script ", err)
 		return "", err
 	}
-	fmt.Println(string(out))
+	//fmt.Println(string(out))
 	return string(out), nil
 	
 }

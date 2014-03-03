@@ -116,7 +116,7 @@ func main() {
 			///////for test
 
         case "fetchurl":
-            kademlia.FetchUrl("http://en.wikipedia.org/wiki/Credit_card")
+            kademlia.FetchUrl(kademClient, "http://en.wikipedia.org/wiki/Credit_card")
 		case "showc":
 			kademlia.ShowC(kademClient)
 
