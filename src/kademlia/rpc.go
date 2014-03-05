@@ -7,8 +7,8 @@ import (
     "net"
     "fmt"
 	//"io/ioutil"
-	"os"
-	"errors"
+	//"os"
+	//"errors"
     )
 
 
@@ -181,33 +181,5 @@ func (k *Kademlia) FindValue(req FindValueRequest, res *FindValueResult) error {
     return nil
 }
 
-//similar to previous operation
-type GetPageRequest struct {
-    Sender Contact
-    MsgID ID
-	Url string
-	
-}
-type GetPageResult struct {
-    MsgID ID
-	Page *os.File
-    Err error
-}
 
-func (k *Kademlia) GetPage(req GetPageRequest, res *GetPageResult) error{
-	k.ch<-req.Sender
-	go Update2(k)
-	///////////////
-	key, _:=FromString(req.Url)
-	found, file:=Local_Find_File(k, key)
-	res.MsgID=CopyID(req.MsgID)
-	if found==false{
-		res.Page=nil
-		res.Err=errors.New("Page not found")
-		return nil
-	}
-	res.Page=file
-	res.Err=nil
-	return nil
-}
 

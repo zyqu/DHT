@@ -4,6 +4,8 @@ package kademlia
 import (
     "encoding/hex"
     "math/rand"
+	"io"
+	"crypto/md5"
 )
 
 
@@ -90,3 +92,13 @@ func FromString(idstr string) (ret ID, err error) {
     return
 }
 
+func Hashcode(s string) (ret ID) {
+	hasher:=md5.New()
+	io.WriteString(hasher, s)
+	
+	bytes:=hex.EncodeToString(hasher.Sum(nil))
+    for i := 0; i < IDBytes; i++ {
+        ret[i] = bytes[i]
+    }
+    return
+}

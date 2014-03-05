@@ -267,22 +267,11 @@ func Local_Find_Value(kadem *Kademlia, key ID) (bool, []byte){
 	}
   return ok, val
 }
-///////////////////////
-func Local_Find_File(kadem *Kademlia, key ID) (bool, *os.File){
-	filename:=key.AsString()
-	//files, err:=os.Open("./tmp/"+kadem.NodeID.AsString()+filename)
-	files, err:=os.Open("./"+filename)
-	if err!=nil{
-		fmt.Println(err)
-		return false, nil
-	}
-	return true, files
-}
+
 
 func Port2Str(port uint16) string{
   return strconv.Itoa(int(port))
 }
-
 func Str2Port(port string) uint16{
   i,error := strconv.Atoi(port)
   if error != nil{
@@ -292,7 +281,6 @@ func Str2Port(port string) uint16{
     return  uint16(i)
   }
 }
-
 func StartServ(kadem *Kademlia, ipport string) bool{
   rpc.Register(kadem)
   rpc.HandleHTTP()
@@ -306,11 +294,10 @@ func StartServ(kadem *Kademlia, ipport string) bool{
   kadem.Port=Str2Port(iptokens[1])
   // Serve forever.
   go http.Serve(l, nil)
-  os.Mkdir("./tmp/"+kadem.NodeID.AsString(), 0700)
-
+  //os.Mkdir("./tmp/"+kadem.NodeID.AsString(), 0700)
+  
   return true
 }
-
 func DoPing(kadem *Kademlia, remoteHost net.IP, port uint16) bool{
     fmt.Println("CLient NodeID: ",kadem.NodeID.AsString())
     portstr:=Port2Str(port)
@@ -349,7 +336,6 @@ func DoPing(kadem *Kademlia, remoteHost net.IP, port uint16) bool{
     //fmt.Println("Ping Failure!")
     return false;
 }
-
 func DoStore(kadem *Kademlia, remoteContact *Contact, storeKey ID, storeValue []byte) bool{
     remoteHost:=remoteContact.Host
     remotePortstr:=Port2Str(remoteContact.Port)
@@ -388,7 +374,6 @@ func DoStore(kadem *Kademlia, remoteContact *Contact, storeKey ID, storeValue []
     return false;
 
 }
-
 func DoFindNode(kadem *Kademlia, remoteContact *Contact, searchKey ID) bool{
 
     remoteHost:=remoteContact.Host
@@ -446,7 +431,6 @@ func DoFindNode(kadem *Kademlia, remoteContact *Contact, searchKey ID) bool{
     return false;
 
 }
-
 func DoFindNode2(kadem *Kademlia, remoteContact *Contact, searchKey ID, succ chan bool) {
 
     remoteHost:=remoteContact.Host
@@ -506,7 +490,6 @@ func DoFindNode2(kadem *Kademlia, remoteContact *Contact, searchKey ID, succ cha
 		succ<-false
 	}
 }
-
 func DoFindValue(kadem *Kademlia, remoteContact *Contact, searchKey ID) bool{
     remoteHost:=remoteContact.Host
     remotePortstr:=Port2Str(remoteContact.Port)
@@ -571,7 +554,6 @@ func DoFindValue(kadem *Kademlia, remoteContact *Contact, searchKey ID) bool{
 
 
 }
-
 type Ret struct{
 	value []byte
 	nodeFound bool
@@ -662,9 +644,6 @@ func DoFindValue2(kadem *Kademlia, remoteContact *Contact, searchKey ID, ret cha
 
 
 }
-
-
-
 func IterativeStore(kadem *Kademlia, storeKey ID, storeValue []byte)  error{
 	nodes, err:=IterativeFindNode(kadem, storeKey)
 	if err!=nil{
@@ -685,7 +664,6 @@ func IterativeStore(kadem *Kademlia, storeKey ID, storeValue []byte)  error{
 	fmt.Println("---------------------------------------")
 	return nil
 }
-
 func IterativeFindNode(kadem *Kademlia, searchKey ID) ([]Contact, error) {
 	finished:=false
 	shortlist:=getClosestContacts(kadem, searchKey)
@@ -962,6 +940,104 @@ func IterativeFindValue(kadem *Kademlia, searchKey ID) (bool, error) {
 	return true, nil
 }
 
+func IterativeFindValue2(kadem *Kademlia, searchKey ID) (string, error) {
+	finished:=false
+	shortlist:=getClosestContacts(kadem, searchKey)
+	
+	if len(shortlist)==0{
+		//fmt.Println("No contact in list")
+		return "", errors.New("No contact")
+	}
+	closestNode:=shortlist[0]
+	to:=make(chan int, 1)
+	go setTimer(to)
+	nodes:=make([]Contact, 0)
+	for !finished{
+
+		if len(shortlist)==0{
+			finished=true
+			break
+		}
+		closestNode=shortlist[0]
+		ret:=make(chan Ret)
+		for i:=0; i<len(shortlist); i++{
+			found, searchCon:=Search_Contact(kadem, shortlist[i].NodeID)
+			if found{
+				//fmt.Println("DoFindValue: ", searchCon.NodeID.AsString())
+				go DoFindValue2(kadem, &searchCon, searchKey, ret)
+
+			}else{
+				//fmt.Println("Cannot perform FindValue")
+				iterativeHelper(kadem)
+				return "", errors.New("Cannot perform FindValue")
+			}
+			
+		}
+		for i:=0; i<len(shortlist); i++{
+			select{
+			case r:=<-ret:
+				if r.value!=nil{
+					//vallue found
+					//fmt.Println("iterative find value: ", string(r.value), " from ", r.from.AsString())
+					iterativeHelper(kadem)
+					//store to closestNode
+					DoStore(kadem, closestNode, searchKey, r.value)
+					
+					return string(r.value), nil
+				}else{
+					//shortlist[i].queried=true
+					/////
+					id:=shortlist[i].NodeID
+					bitindex:=kadem.NodeID.Xor(id).PrefixLen()-1
+					if bitindex<0{
+						bitindex=0
+					}
+					for i:=0; i<len(kadem.AddrTab[bitindex].ContactLst); i++{
+						if id.Equals(kadem.AddrTab[bitindex].ContactLst[i].NodeID){
+							//fmt.Println("queried", shortlist[i].NodeID)
+							kadem.AddrTab[bitindex].ContactLst[i].queried=true
+							break
+						}
+					}
+					nodes=append(nodes, *shortlist[i])
+					if len(nodes)>=K{
+						finished=true
+						break
+					}
+				}
+			case <-to:
+				//fmt.Println("timeout")
+				finished=true
+				break
+			}
+		}
+		shortlist=getClosestContacts(kadem, searchKey)
+		if len(shortlist)<=0{
+			finished=true
+			break
+		}
+		d1:=kadem.NodeID.Xor(closestNode.NodeID).PrefixLen()-1
+		if d1<0{
+			d1=0
+		}
+		d2:=kadem.NodeID.Xor(shortlist[0].NodeID).PrefixLen()-1
+		if d2<0{
+			d2=0
+		}
+		if d1<d2{
+			//no node return closer than closest node already seen
+			finished=true
+			break
+		}else{
+			closestNode=shortlist[0]
+		}
+	}
+	
+	//fmt.Println("iterativeFindValue ERR")
+	iterativeHelper(kadem)
+	return "", errors.New("Not found")
+}
+
 
 
 
@@ -1053,3 +1129,22 @@ func HTMLParser(body string) (string, error){
 	return string(out), nil
 	
 }
+
+func HandleClient(kadem *Kademlia, url string) string{
+    webpageDSroot:="./webpageDS/"
+    strkey:=strings.Replace(url,"http://en.wikipedia.org/wiki/","",1)
+    filename:=webpageDSroot+strkey+".html"
+	ret1, err1:=ioutil.ReadFile(filename)
+	if err1==nil{
+		return string(ret1)
+	}
+	key:=Hashcode(strkey)
+	ret2, err2:=IterativeFindValue2(kadem, key)
+	if err2==nil{
+		return string(ret2)
+	}
+	FetchUrl(kadem, url)
+	ret3, _:=ioutil.ReadFile(filename)
+	return string(ret3)
+}
+

@@ -55,14 +55,7 @@ func main() {
 		fmt.Println("Cannot resolve server ip")
 		return
 	}
-	////////////////////////////
-	/*
-	resp, _:=http.Get("http://en.wikipedia.org/wiki/Kademlia")
-    defer resp.Body.Close()
-    body, _ := ioutil.ReadAll(resp.Body)
-	kademlia.HTMLParser(string(body))
-	*/
-	
+
 
     //kademServer := kademlia.NewKademlia()
     //kademlia.StartServ(kademServer,listenStr)
@@ -113,10 +106,14 @@ func main() {
 
 
         switch tokens[0] {
-			///////for test
 
-        case "fetchurl":
-            kademlia.FetchUrl(kademClient, "http://en.wikipedia.org/wiki/Credit_card")
+        case "get":
+			if len(tokens)!=2{
+				fmt.Println("fetchurl takes 1 argument, url")
+				break
+			}
+            res:=kademlia.HandleClient(kademClient, tokens[1])
+			fmt.Println(res)
 		case "showc":
 			kademlia.ShowC(kademClient)
 
