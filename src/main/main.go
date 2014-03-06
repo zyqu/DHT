@@ -55,7 +55,7 @@ func main() {
 		fmt.Println("Cannot resolve server ip")
 		return
 	}
-
+	//fmt.Println(kademlia.Hashcode("Kademlia").AsString())
 
     //kademServer := kademlia.NewKademlia()
     //kademlia.StartServ(kademServer,listenStr)
@@ -235,7 +235,7 @@ func main() {
 			kademlia.IterativeFindValue(kademClient, nodeid)
 
         default:
-            fmt.Println("Invalid command, the correct operation: whoami, local_find_value, get_contact, iterativeStore, iterativeFindNode, iterativeFindValue")
+            fmt.Println("Invalid command, the correct operation: get, whoami, local_find_value, get_contact, iterativeStore, iterativeFindNode, iterativeFindValue")
             
         }
         

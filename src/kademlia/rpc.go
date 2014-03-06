@@ -6,8 +6,8 @@ package kademlia
 import (
     "net"
     "fmt"
-	//"io/ioutil"
-	//"os"
+	"io/ioutil"
+	"os"
 	//"errors"
     )
 
@@ -55,7 +55,7 @@ type StoreRequest struct {
     MsgID ID
     Key ID
     Value []byte
-	
+	Body string
 }
 
 type StoreResult struct {
@@ -77,13 +77,36 @@ func (k *Kademlia) Store(req StoreRequest, res *StoreResult) error {
     return nil
 }
 
-/*
-func (k *Kademlia) SavePage(req StoreRequest) error{
-	filename:="./tmp/"+k.NodeID.AsString()+"/"+req.MsgID.AsString()+"/"+req.Url
-	ioutil.WriteFile(filename, string(req.Value), 0x777)
-	return nil
+func (k *Kademlia) Store2(req StoreRequest, res *StoreResult) error {
+    // TODO: Implement.
+    //go Update(k, req.Sender)
+	k.ch<-req.Sender
+	go Update2(k)
+	
+	k.Localmap[req.Key]=req.Value
+	webpageDSroot:="./webpageDS/"
+	filename:=webpageDSroot+string(req.Value)+".html"
+    f, openerr := os.Create(filename)
+    check(openerr)
+
+    strbody:=req.Body[:]
+
+    
+    stringconvert , _ := HTMLParser(strbody)
+    byteconvert:=[]byte(stringconvert)
+
+    _,writeerr := f.Write(byteconvert)
+    check(writeerr)
+
+    f.Sync()
+    f.Close()
+	
+    //fmt.Println("\n")
+    res.MsgID=CopyID(req.MsgID)
+    res.Err=nil
+    return nil
 }
-*/
+
 
 // FIND_NODE
 type FindNodeRequest struct {
@@ -148,6 +171,7 @@ type FindValueResult struct {
     Value []byte
     Nodes []FoundNode
     Err error
+	Body string
 }
 
 func (k *Kademlia) FindValue(req FindValueRequest, res *FindValueResult) error {
@@ -181,5 +205,46 @@ func (k *Kademlia) FindValue(req FindValueRequest, res *FindValueResult) error {
     return nil
 }
 
+/////////////
+func (k *Kademlia) FindValue2(req FindValueRequest, res *FindValueResult) error {
+    // TODO: Implement.
+    //go Update(k, req.Sender)
+	k.ch<-req.Sender
+	go Update2(k)
+	//fmt.Println("Finding....")
+	
+	found, val:=Local_Find_Value(k,req.Key)
+	if found==true{
+	    res.Value=val
+		webpageDSroot:="./webpageDS/"
+		filename:=webpageDSroot+string(val)+".html"
+		body, err:=ioutil.ReadFile(filename)
+		if err!=nil{
+			return err
+		}
+		res.Body=string(body)
+		//fmt.Println("Find value: ", string(val))
+	}else if found == false{
+        bitindex := k.NodeID.Xor(req.Key).PrefixLen()-1
+		if bitindex<0{
+			bitindex=0
+		}
+		tempFoundNode:=new(FoundNode)
+        FoundNodelst := make([]FoundNode, K)
+        for i:=0;i<len(k.AddrTab[bitindex].ContactLst);i++{
+			if k.AddrTab[bitindex].ContactLst[i].Host!=nil&&k.AddrTab[bitindex].ContactLst[i].NodeID!=req.Sender.NodeID{
+				tempFoundNode.NodeID=k.AddrTab[bitindex].ContactLst[i].NodeID
+				tempFoundNode.Port=k.AddrTab[bitindex].ContactLst[i].Port
+				tempFoundNode.IPAddr=k.AddrTab[bitindex].ContactLst[i].Host.String()
+				FoundNodelst[i]=*tempFoundNode
+			}
+        }
+        res.Nodes=FoundNodelst
+    }
+	
+    res.MsgID=CopyID(req.MsgID)
+    res.Err=nil
+    return nil
+}
 
 

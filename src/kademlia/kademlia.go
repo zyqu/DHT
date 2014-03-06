@@ -374,6 +374,46 @@ func DoStore(kadem *Kademlia, remoteContact *Contact, storeKey ID, storeValue []
     return false;
 
 }
+func DoStore2(kadem *Kademlia, remoteContact *Contact, storeKey ID, storeValue []byte, storeBody string) bool{
+    remoteHost:=remoteContact.Host
+    remotePortstr:=Port2Str(remoteContact.Port)
+
+    client, err := rpc.DialHTTP("tcp", remoteHost.String()+":"+remotePortstr)
+    if err != nil {
+        //log.Fatal("DialHTTP: ", err)
+        return false
+    }
+
+    storeReq := new(StoreRequest)
+    storeReq.Sender.NodeID=kadem.NodeID
+    storeReq.Sender.Host=kadem.Host
+    storeReq.Sender.Port=kadem.Port
+
+    storeReq.MsgID=NewRandomID()
+
+    storeReq.Key=storeKey
+    storeReq.Value=storeValue
+	storeReq.Body=storeBody
+
+    var storeRes StoreResult
+
+    err = client.Call("Kademlia.Store2", storeReq, &storeRes)
+    if err != nil {
+        //log.Fatal("Call: ", err)
+        return false
+    }
+    if storeReq.MsgID.Equals(storeRes.MsgID){
+        //go Update(kadem, *remoteContact)
+		kadem.ch<-*remoteContact
+		go Update2(kadem)
+		
+        return true;
+    }
+    fmt.Println(remoteContact.NodeID.AsString(), " Store Failure!")
+    return false;
+
+}
+
 func DoFindNode(kadem *Kademlia, remoteContact *Contact, searchKey ID) bool{
 
     remoteHost:=remoteContact.Host
@@ -558,6 +598,7 @@ type Ret struct{
 	value []byte
 	nodeFound bool
 	from ID
+	body string
 }
 func DoFindValue2(kadem *Kademlia, remoteContact *Contact, searchKey ID, ret chan Ret) bool{
     remoteHost:=remoteContact.Host
@@ -940,6 +981,95 @@ func IterativeFindValue(kadem *Kademlia, searchKey ID) (bool, error) {
 	return true, nil
 }
 
+/////////////
+//DoFindValue3
+func DoFindValue3(kadem *Kademlia, remoteContact *Contact, searchKey ID, ret chan Ret) bool{
+    remoteHost:=remoteContact.Host
+    remotePortstr:=Port2Str(remoteContact.Port)
+    //fmt.Println("Start FoundValue:")
+    client, err := rpc.DialHTTP("tcp", remoteHost.String()+":"+remotePortstr)
+    if err != nil {
+        //log.Fatal("DialHTTP: ", err)
+		
+		var retu Ret
+		retu.value=nil
+		retu.nodeFound=false
+		ret<-retu
+        return false
+    }
+
+    findValueReq := new(FindValueRequest)
+
+    findValueReq.Sender.Host=kadem.Host
+    findValueReq.Sender.Port=kadem.Port
+    findValueReq.Sender.NodeID=kadem.NodeID
+
+    findValueReq.MsgID=NewRandomID()
+
+    findValueReq.Key=searchKey
+
+    var findValueRes FindValueResult
+    err = client.Call("Kademlia.FindValue2", findValueReq, &findValueRes)
+
+    if err != nil {
+        //log.Fatal("Call: ", err)
+		var retu Ret
+		retu.value=nil
+		retu.nodeFound=false
+		ret<-retu
+        return false
+    }
+
+    if findValueReq.MsgID.Equals(findValueRes.MsgID){
+        //go Update(kadem, *remoteContact)
+		kadem.ch<-*remoteContact
+		go Update2(kadem)
+		
+		//fmt.Println("Find Value Success!")
+        if findValueRes.Value != nil{
+          //fmt.Println("Value Found:", string(findValueRes.Value), " from ", remoteContact.NodeID.AsString())
+		  var retu Ret
+		  retu.value=findValueRes.Value
+		  retu.body=findValueRes.Body
+		  retu.nodeFound=false
+		  retu.from=remoteContact.NodeID
+		  ret<-retu
+        }else{
+          //fmt.Println("Node Found:")
+          //fmt.Println(findValueRes.Nodes)
+		  for i:=0; i<len(findValueRes.Nodes); i++{
+			  if findValueRes.Nodes[i].IPAddr!=""{
+				  newcontact:=new(Contact)
+				  newcontact.NodeID=findValueRes.Nodes[i].NodeID
+				  newcontact.Host=net.ParseIP(findValueRes.Nodes[i].IPAddr)
+				  newcontact.Port=findValueRes.Nodes[i].Port
+				  newcontact.queried=false
+				  //go Update(kadem, *newcontact)
+				  kadem.ch<-*newcontact
+				  go Update2(kadem)
+				  //fmt.Println(findValueRes.Nodes[i].NodeID.AsString())
+			  }
+		  }
+		  var retu Ret
+		  retu.value=nil
+		  retu.body=""
+		  retu.nodeFound=true
+		  ret<-retu
+        }
+        return true;
+    }
+    //fmt.Println("FindValue Failure!")
+	var retu Ret
+	retu.value=nil
+	retu.nodeFound=false
+	ret<-retu
+    return false;
+
+
+
+
+}
+
 func IterativeFindValue2(kadem *Kademlia, searchKey ID) (string, error) {
 	finished:=false
 	shortlist:=getClosestContacts(kadem, searchKey)
@@ -964,7 +1094,7 @@ func IterativeFindValue2(kadem *Kademlia, searchKey ID) (string, error) {
 			found, searchCon:=Search_Contact(kadem, shortlist[i].NodeID)
 			if found{
 				//fmt.Println("DoFindValue: ", searchCon.NodeID.AsString())
-				go DoFindValue2(kadem, &searchCon, searchKey, ret)
+				go DoFindValue3(kadem, &searchCon, searchKey, ret)
 
 			}else{
 				//fmt.Println("Cannot perform FindValue")
@@ -974,16 +1104,19 @@ func IterativeFindValue2(kadem *Kademlia, searchKey ID) (string, error) {
 			
 		}
 		for i:=0; i<len(shortlist); i++{
+
 			select{
 			case r:=<-ret:
+				
 				if r.value!=nil{
 					//vallue found
 					//fmt.Println("iterative find value: ", string(r.value), " from ", r.from.AsString())
 					iterativeHelper(kadem)
 					//store to closestNode
-					DoStore(kadem, closestNode, searchKey, r.value)
+
+					DoStore2(kadem, closestNode, searchKey, r.value, r.body)
 					
-					return string(r.value), nil
+					return string(r.body), nil
 				}else{
 					//shortlist[i].queried=true
 					/////
@@ -1011,6 +1144,7 @@ func IterativeFindValue2(kadem *Kademlia, searchKey ID) (string, error) {
 				break
 			}
 		}
+
 		shortlist=getClosestContacts(kadem, searchKey)
 		if len(shortlist)<=0{
 			finished=true
@@ -1141,10 +1275,13 @@ func HandleClient(kadem *Kademlia, url string) string{
 	key:=Hashcode(strkey)
 	ret2, err2:=IterativeFindValue2(kadem, key)
 	if err2==nil{
+        
 		return string(ret2)
 	}
 	FetchUrl(kadem, url)
 	ret3, _:=ioutil.ReadFile(filename)
+	
+	kadem.Localmap[key]=[]byte(strkey)
 	return string(ret3)
 }
 
