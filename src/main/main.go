@@ -112,8 +112,8 @@ func main() {
 				fmt.Println("fetchurl takes 1 argument, url")
 				break
 			}
-            res:=kademlia.HandleClient(kademClient, tokens[1])
-			fmt.Println(res)
+            kademlia.HandleClient(kademClient, tokens[1])
+			//fmt.Println(res)
 		case "showc":
 			kademlia.ShowC(kademClient)
 

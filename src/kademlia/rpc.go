@@ -91,12 +91,21 @@ func (k *Kademlia) Store2(req StoreRequest, res *StoreResult) error {
 
     strbody:=req.Body[:]
 
-    
+    /*
     stringconvert , _ := HTMLParser(strbody)
     byteconvert:=[]byte(stringconvert)
 
     _,writeerr := f.Write(byteconvert)
     check(writeerr)
+	*/
+	_, writeerr:=f.Write([]byte(strbody))
+    check(writeerr)
+    f.Sync()
+    f.Close()
+	perr:=HTMLParser(filename)
+  	if perr!=nil{
+		fmt.Println(perr)
+	}
 
     f.Sync()
     f.Close()

@@ -1,7 +1,11 @@
 from bs4 import BeautifulSoup
 import sys
 
-html_doc=sys.argv[1]
+#html_doc=sys.argv[1]
+html_doc=str()
+for line in open(sys.argv[1]):
+    html_doc+=line.strip()
+
 soup=BeautifulSoup(html_doc)
 
 for link in soup.find_all('link'):
@@ -22,5 +26,6 @@ for link in soup.find_all('a'):
         href='http:'
         href+=link['href']
         link['href']=href
-#html=soup.prettify('utf-8')
-print soup
+html=soup.prettify('utf-8')
+f=open(sys.argv[1], 'w+')
+f.write(html)

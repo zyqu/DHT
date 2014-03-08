@@ -1223,36 +1223,41 @@ func FetchUrl(kadem *Kademlia, url string)(int){
 
       strbody:=string(body[:])
 
-      
-      stringconvert , _ := HTMLParser(strbody)
-      byteconvert:=[]byte(stringconvert)
+
+      //stringconvert , _ := HTMLParser(strbody)
+      //byteconvert:=[]byte(stringconvert)
+	  
+
 
       //write to localmap
-      urlID,_ := FromString(url)
-      kadem.Localmap[urlID]=byteconvert
+      //urlID,_ := FromString(url)
+      //kadem.Localmap[urlID]=byteconvert
 
-      _,writeerr := f.Write(byteconvert)
+      //_,writeerr := f.Write(byteconvert)
+	  _, writeerr:=f.Write([]byte(strbody))
       check(writeerr)
-
       f.Sync()
       f.Close()
-
+	  perr:=HTMLParser(filename)
+	  if perr!=nil{
+		  fmt.Println(perr)
+	  }
       return 0
     }
   }
   return 0
 }
 
-func HTMLParser(body string) (string, error){
-	/*
+func HTMLParser(file string)  error{
+	
 	if _, err:=os.Stat(file); os.IsNotExist(err){
 		fmt.Println("No such file")
-		return false, errors.New("No such file")
+		return errors.New("No such file")
 	}
 	cmd:=exec.Command("python", "src/href.py", file)
 	cmd.Run()
-	return true, nil
-	*/
+	return nil
+	/*
 	cmd:=exec.Command("python", "src/href.py", string(body))
 	out, err:=cmd.Output()
 	if err!=nil{
@@ -1261,7 +1266,7 @@ func HTMLParser(body string) (string, error){
 	}
 	//fmt.Println(string(out))
 	return string(out), nil
-	
+	*/
 }
 
 func HandleClient(kadem *Kademlia, url string) string{
@@ -1278,6 +1283,7 @@ func HandleClient(kadem *Kademlia, url string) string{
         
 		return string(ret2)
 	}
+	fmt.Println("fetch...")
 	FetchUrl(kadem, url)
 	ret3, _:=ioutil.ReadFile(filename)
 	
