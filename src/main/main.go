@@ -148,20 +148,53 @@ func main() {
 				if err!=nil{
 					fmt.Println("Error:", err)
 				}
-				for idx:=range items[s:e]{
-					//fmt.Println(items[idx])
-                    start := time.Now()
-                    _, success:= kademlia.HandleClient(kademClient, "http://en.wikipedia.org/wiki/"+items[idx], mode)
-                    elapsed := time.Since(start)
-                    if success==true{
-                    	log.Println(items[idx], elapsed)
-                    	fmt.Println(items[idx], elapsed)
-                	}else{
-                    	log.Println(items[idx], "-1")
-                    	fmt.Println(items[idx], "-1")
-                	}
-                    logf.Sync()
-				}
+                if s < e{
+    				for idx:=range items[s:e]{
+    					//fmt.Println(items[idx])
+                        start := time.Now()
+                        _, success:= kademlia.HandleClient(kademClient, "http://en.wikipedia.org/wiki/"+items[idx], mode)
+                        elapsed := time.Since(start)
+                        if success==true{
+                        	log.Println(items[idx], elapsed)
+                        	fmt.Println(items[idx], elapsed)
+                    	}else{
+                        	log.Println(items[idx], "-1")
+                        	fmt.Println(items[idx], "-1")
+                    	}
+                        logf.Sync()
+    				}
+                }else{
+                    for idx:=range items[s:]{
+                        //fmt.Println(items[idx])
+                        start := time.Now()
+                        _, success:= kademlia.HandleClient(kademClient, "http://en.wikipedia.org/wiki/"+items[idx], mode)
+                        elapsed := time.Since(start)
+                        if success==true{
+                            log.Println(items[idx], elapsed)
+                            fmt.Println(items[idx], elapsed)
+                        }else{
+                            log.Println(items[idx], "-1")
+                            fmt.Println(items[idx], "-1")
+                        }
+                        logf.Sync()
+                    }
+
+                    for idx:=range items[0:e]{
+                        //fmt.Println(items[idx])
+                        start := time.Now()
+                        _, success:= kademlia.HandleClient(kademClient, "http://en.wikipedia.org/wiki/"+items[idx], mode)
+                        elapsed := time.Since(start)
+                        if success==true{
+                            log.Println(items[idx], elapsed)
+                            fmt.Println(items[idx], elapsed)
+                        }else{
+                            log.Println(items[idx], "-1")
+                            fmt.Println(items[idx], "-1")
+                        }
+                        logf.Sync()
+                    }
+
+                }
 
             }else{
                 fmt.Println("Single User Mode")
