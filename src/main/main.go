@@ -14,7 +14,8 @@ import (
     "strings"
 	//"io/ioutil"
     "strconv"
-    "io"
+    "io/ioutil"
+	"encoding/json"
 )
 
 import (
@@ -120,18 +121,78 @@ func main() {
                 break
             }
 
-
-            logf, _ := os.Create("log.txt")
-            log.SetOutput(logf)
-            defer logf.Close()
+            
 
             if mode==1{
                 fmt.Println("Multi-user Mode")
-
+				//save mode1's log into log1.txt
+	            logf, _ := os.Create("log1.txt")
+	            log.SetOutput(logf)
+	            defer logf.Close()
+				J, err:=ioutil.ReadFile("./wikiindex/"+filename)
+				if err!=nil{
+					panic(err)
+				}
+				fmt.Println("Indicate start and end positions: ")
+				line, err := reader.ReadString ('\n')
+				if err!=nil{
+					fmt.Println(err)
+					break
+				}
+				command:=strings.Replace(line, "\n", "", -1)
+				tokens:=strings.Fields(command)
+				s, _:=strconv.Atoi(tokens[0])
+				e, _:=strconv.Atoi(tokens[1])
+				var items []string
+				err=json.Unmarshal(J, &items)
+				if err!=nil{
+					fmt.Println("Error:", err)
+				}
+				for idx:=range items[s:e]{
+					//fmt.Println(items[idx])
+                    start := time.Now()
+                    _, success:= kademlia.HandleClient(kademClient, "http://en.wikipedia.org/wiki/"+items[idx], mode)
+                    elapsed := time.Since(start)
+                    if success==true{
+                    	log.Println(items[idx], elapsed)
+                    	fmt.Println(items[idx], elapsed)
+                	}else{
+                    	log.Println(items[idx], "-1")
+                    	fmt.Println(items[idx], "-1")
+                	}
+                    logf.Sync()
+				}
 
             }else{
                 fmt.Println("Single User Mode")
-
+				//save mode0's log into log0.txt
+	            logf, _ := os.Create("log0.txt")
+	            log.SetOutput(logf)
+	            defer logf.Close()
+				J, err:=ioutil.ReadFile("./wikiindex/"+filename)
+				if err!=nil{
+					panic(err)
+				}
+				var items []string
+				err=json.Unmarshal(J, &items)
+				if err!=nil{
+					fmt.Println("Error:", err)
+				}
+				for idx:=range items{
+					//fmt.Println(items[idx])
+                    start := time.Now()
+                    _, success:= kademlia.HandleClient(kademClient, "http://en.wikipedia.org/wiki/"+items[idx], mode)
+                    elapsed := time.Since(start)
+                    if success==true{
+                    	log.Println(items[idx], elapsed)
+                    	fmt.Println(items[idx], elapsed)
+                	}else{
+                    	log.Println(items[idx], "-1")
+                    	fmt.Println(items[idx], "-1")
+                	}
+                    logf.Sync()
+				}
+				/*
                 f, err := os.OpenFile("./wikiindex/"+filename,os.O_RDONLY,0)
                 if err != nil{
                     fmt.Printf("%v\n",err)
@@ -144,6 +205,7 @@ func main() {
                 for{
                     line, err := br.ReadString('\n')
                     line = strings.Replace(line,"\n","",-1)
+
                     if err == io.EOF {
                         break
                     }else{
@@ -160,12 +222,14 @@ func main() {
                     }
                         logf.Sync()
                     }
+					
                 }
-            
+            	*/
             
 
                 //_, success:= kademlia.HandleClient(kademClient, tokens[1], mode)
-
+				fmt.Println("-----------------------------------------------------")
+				fmt.Println("Finished batchtest!")
             }
 
 
