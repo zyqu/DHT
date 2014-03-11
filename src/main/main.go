@@ -13,6 +13,8 @@ import (
     "time"
     "strings"
 	//"io/ioutil"
+    "strconv"
+    "io"
 )
 
 import (
@@ -107,13 +109,78 @@ func main() {
 
         switch tokens[0] {
 
+        case "batchtest":
+            if len(tokens)!=3{
+                fmt.Println("fetchurl takes 2 mode, filename mode")
+                break
+            }
+            mode, err := strconv.Atoi(tokens[2])
+            filename :=tokens[1]
+            if err!=nil{
+                break
+            }
+
+
+            logf, _ := os.Create("log.txt")
+            log.SetOutput(logf)
+            defer logf.Close()
+
+            if mode==1{
+                fmt.Println("Multi-user Mode")
+
+
+            }else{
+                fmt.Println("Single User Mode")
+
+                f, err := os.OpenFile("./wikiindex/"+filename,os.O_RDONLY,0)
+                if err != nil{
+                    fmt.Printf("%v\n",err)
+                    os.Exit(1)
+                }
+                defer f.Close()
+
+                
+                br := bufio.NewReader(f)
+                for{
+                    line, err := br.ReadString('\n')
+                    line = strings.Replace(line,"\n","",-1)
+                    if err == io.EOF {
+                        break
+                    }else{
+                        //fmt.Printf("http://en.wikipedia.org/wiki/"+line)
+                        start := time.Now()
+                        _, success:= kademlia.HandleClient(kademClient, "http://en.wikipedia.org/wiki/"+line, mode)
+                        elapsed := time.Since(start)
+                        if success==true{
+                        log.Println(line, elapsed)
+                        fmt.Println(line, elapsed)
+                    }else{
+                        log.Println(line, "-1")
+                        fmt.Println(line, "-1")
+                    }
+                        logf.Sync()
+                    }
+                }
+            
+            
+
+                //_, success:= kademlia.HandleClient(kademClient, tokens[1], mode)
+
+            }
+
+
+
         case "get":
-			if len(tokens)!=2{
-				fmt.Println("fetchurl takes 1 argument, url")
-				break
-			}
-            kademlia.HandleClient(kademClient, tokens[1])
-			//fmt.Println(res)
+            if len(tokens)!=3{
+                fmt.Println("fetchurl takes 2 arguments, url mode")
+                break
+            }
+            mode, err := strconv.Atoi(tokens[2])
+            if err!=nil{
+                break
+            }
+            kademlia.HandleClient(kademClient, tokens[1], mode)
+
 		case "showc":
 			kademlia.ShowC(kademClient)
 

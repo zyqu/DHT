@@ -260,11 +260,13 @@ func Find_Contact(kadem *Kademlia, id ID) (net.IP, uint16){
 
 func Local_Find_Value(kadem *Kademlia, key ID) (bool, []byte){
   val, ok := kadem.Localmap[key]
+  /*
   if ok ==false{
    	fmt.Println("ERR")
    } else {
 		fmt.Println(string(val))
 	}
+  */
   return ok, val
 }
 
@@ -1200,7 +1202,9 @@ func check(e error){
   }
 }
 
-func FetchUrl(kadem *Kademlia, url string)(int){
+func FetchUrl(kadem *Kademlia, url string, mode int)(int){
+  //mode 0 single mode
+  //mode 1 multi mode
   webpageDSroot:="./webpageDS/"
   strkey:=strings.Replace(url,"http://en.wikipedia.org/wiki/","",1)
   filename:=webpageDSroot+strkey+".html"
@@ -1223,7 +1227,6 @@ func FetchUrl(kadem *Kademlia, url string)(int){
 
       strbody:=string(body[:])
 
-
       //stringconvert , _ := HTMLParser(strbody)
       //byteconvert:=[]byte(stringconvert)
 	  
@@ -1234,14 +1237,28 @@ func FetchUrl(kadem *Kademlia, url string)(int){
       //kadem.Localmap[urlID]=byteconvert
 
       //_,writeerr := f.Write(byteconvert)
-	  _, writeerr:=f.Write([]byte(strbody))
+	    _, writeerr:=f.Write([]byte(strbody))
       check(writeerr)
       f.Sync()
       f.Close()
-	  perr:=HTMLParser(filename)
-	  if perr!=nil{
-		  fmt.Println(perr)
-	  }
+	    perr:=HTMLParser(filename)
+	    if perr!=nil{
+        fmt.Println(perr)
+	    }
+      urlID:=Hashcode(strkey)
+      kadem.Localmap[urlID]=[]byte(strkey)
+	  /*
+      if mode==1{		  
+		iterstoreerr := IterativeStore(kadem, urlID, []byte(strkey))
+		if iterstoreerr==nil{
+		  return 0
+		}else{
+		  return -2
+		}
+      }
+	  */
+
+
       return 0
     }
   }
@@ -1269,25 +1286,42 @@ func HTMLParser(file string)  error{
 	*/
 }
 
-func HandleClient(kadem *Kademlia, url string) string{
-    webpageDSroot:="./webpageDS/"
-    strkey:=strings.Replace(url,"http://en.wikipedia.org/wiki/","",1)
-    filename:=webpageDSroot+strkey+".html"
+func HandleClient(kadem *Kademlia, url string, mode int) (string, bool){
+  webpageDSroot:="./webpageDS/"
+  url=strings.Replace(url, "\n", "", -1)
+  strkey:=strings.Replace(url,"http://en.wikipedia.org/wiki/","",1)
+  filename:=webpageDSroot+strkey+".html"
+  //filename=strings.Replace(filename, "/","##",-1)
+  /*
 	ret1, err1:=ioutil.ReadFile(filename)
 	if err1==nil{
 		return string(ret1)
 	}
+  */
 	key:=Hashcode(strkey)
-	ret2, err2:=IterativeFindValue2(kadem, key)
-	if err2==nil{
-        
-		return string(ret2)
-	}
-	fmt.Println("fetch...")
-	FetchUrl(kadem, url)
-	ret3, _:=ioutil.ReadFile(filename)
-	
-	kadem.Localmap[key]=[]byte(strkey)
-	return string(ret3)
+  ok, _:=Local_Find_Value(kadem, key)
+  if ok==true{
+    ret1, err1:=ioutil.ReadFile(filename)
+    if err1==nil{
+      return string(ret1), true
+    }
+  }
+  if mode==1{
+  	ret2, err2:=IterativeFindValue2(kadem, key)
+  	if err2==nil{
+        f, openerr := os.Create(filename)
+        check(openerr)
+	    _, writeerr:=f.Write([]byte(ret2))
+		check(writeerr)
+		f.Close()
+  		return string(ret2), true
+  	}
+  }
+	reserr:=FetchUrl(kadem, url, mode)
+  if reserr==-1{
+    return "404 Not Found",false
+  }
+  ret3, _:=ioutil.ReadFile(filename)
+  return  string(ret3), true
 }
 
