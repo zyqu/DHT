@@ -1206,12 +1206,13 @@ func FetchUrl(kadem *Kademlia, url string, mode int)(int){
   //mode 0 single mode
   //mode 1 multi mode
   webpageDSroot:="./webpageDS/"
-  url=strings.Replace(url, "\n", "", -1)
+  url=strings.Replace(url,"\n","",-1)
+
   strkey:=strings.Replace(url,"http://en.wikipedia.org/wiki/","",1)
-
-
+  strkey=strings.Replace(strkey,"/","",-1)
+  
   filename:=webpageDSroot+strkey+".html"
-  filename=strings.Replace(filename, "/","##",-1)
+  //filename=strings.Replace(filename, "/","##",-1)
 
 
   //fmt.Println(filename)
@@ -1235,6 +1236,7 @@ func FetchUrl(kadem *Kademlia, url string, mode int)(int){
 
       strbody:=string(body[:])
 
+      fmt.Println("Writing file"+filename)
       f, openerr := os.Create(filename)
       check(openerr)
       _, writeerr:=f.Write([]byte(strbody))
@@ -1311,12 +1313,12 @@ func HTMLParser(file string)  error{
 
 func HandleClient(kadem *Kademlia, url string, mode int) (string, bool){
   webpageDSroot:="./webpageDS/"
-  url=strings.Replace(url, "\n", "", -1)
+  url=strings.Replace(url,"\n","",-1)
+
   strkey:=strings.Replace(url,"http://en.wikipedia.org/wiki/","",1)
-
-
+  strkey=strings.Replace(strkey,"/","",-1)
+  
   filename:=webpageDSroot+strkey+".html"
-  filename=strings.Replace(filename, "/","##",-1)
 
 
 
