@@ -1,3 +1,44 @@
+************************************************
+* Distributed Wikipedia Command Line inferface *
+************************************************
+
+Make sure to configure the maximal number of allowed to be opened files in your OS before conduct the large-scale test for multi-user mode. 4000 might be a good choice
+
+Command line:
+
+single-user mode, where one node fetching webpages:
+batchtest filenameofwikiindex 0 
+
+multi-user mode, where multiple nodes fetching/sharing webpages:
+batchtest filenameofwikiindex 1
+startindex endindex
+
+if the endindex is less than startindex, then there is a loop. end index -> 0 -> startindex
+
+filenameofwikiindex is the jsonfile which has the indexes of wiki webpage to fetch "/wikiindex/filenameofwikiindex"
+
+In the multi-user mode, the way to test is as follows:
+
+First:
+Device A ping Device B and Device C
+Device B ping Device A and Device C
+Device C ping Device A and Device B
+
+Second:
+Device A 
+batchtest 30000wikiindex.json 1
+0 2999
+
+Device B
+batchtest 30000wikiindex.json 1
+1000 999
+
+Device C
+batchtest 30000wikiindex.json 1
+2000 1999
+
+
+
 ************
 * BUILDING *
 ************
@@ -25,19 +66,6 @@ default is perform a PING RPC and exit.
 * COMMAND-LINE INTERFACE *
 **************************
 
-As demonstrated above, your program must accept two positional arguments of the
-form "host:port". The first tells it the bind address of its own server; the
-second gives the first peer your client should connect to to join the network.
-
-After setting up its server and establishing a connection to its first peer,
-your executable should loop forever, reading commands from stdin, executing
-them, and printing their results to stdout. All data should be printed with
-the %v specifier and should be followed by exactly one newline. You may assume
-values are alphanumeric and are no more than 4095 B. All operations should
-complete within 10 seconds.
-
-Implement the following commands:
-
 whoami
     Print your node ID.
 
@@ -62,8 +90,6 @@ iterativeFindValue key
     printf("%v %v\n", ID, value), where ID refers to the node that finally
     returned the value. If you do not find a value, print "ERR".
 
-// The following four commands cause your code to invoke the appropriate RPC on
-// another node, specified by the nodeID argument.
 ping nodeID
 ping host:port
     Perform a ping. 
