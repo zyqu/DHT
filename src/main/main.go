@@ -164,32 +164,33 @@ func main() {
                         logf.Sync()
     				}
                 }else{
-                    for idx:=range items[s:]{
+					items1:=items[s:]
+                    for idx:=range items1{
                         //fmt.Println(items[idx])
                         start := time.Now()
-                        _, success:= kademlia.HandleClient(kademClient, "http://en.wikipedia.org/wiki/"+items[idx], mode)
+                        _, success:= kademlia.HandleClient(kademClient, "http://en.wikipedia.org/wiki/"+items1[idx], mode)
                         elapsed := time.Since(start)
                         if success==true{
-                            log.Println(items[idx], elapsed)
-                            fmt.Println(items[idx], elapsed)
+                            log.Println(items1[idx], elapsed)
+                            fmt.Println(items1[idx], elapsed)
                         }else{
-                            log.Println(items[idx], "-1")
-                            fmt.Println(items[idx], "-1")
+                            log.Println(items1[idx], "-1")
+                            fmt.Println(items1[idx], "-1")
                         }
                         logf.Sync()
                     }
-
-                    for idx:=range items[0:e]{
+					items2:=items[0:e]
+                    for idx:=range items2{
                         //fmt.Println(items[idx])
                         start := time.Now()
-                        _, success:= kademlia.HandleClient(kademClient, "http://en.wikipedia.org/wiki/"+items[idx], mode)
+                        _, success:= kademlia.HandleClient(kademClient, "http://en.wikipedia.org/wiki/"+items2[idx], mode)
                         elapsed := time.Since(start)
                         if success==true{
-                            log.Println(items[idx], elapsed)
-                            fmt.Println(items[idx], elapsed)
+                            log.Println(items2[idx], elapsed)
+                            fmt.Println(items2[idx], elapsed)
                         }else{
-                            log.Println(items[idx], "-1")
-                            fmt.Println(items[idx], "-1")
+                            log.Println(items2[idx], "-1")
+                            fmt.Println(items2[idx], "-1")
                         }
                         logf.Sync()
                     }
